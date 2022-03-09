@@ -69,7 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<double> mean = [0.5, 0.5, 0.5];
   List<double> std = [0.5, 0.5, 0.5];
 
-  File? image;
+  File? image = File("assets/logos/TAIAO.png");
   Model? imageModel;
   //PostProcessingModel? imageModel;
   String? imagePrediction;
