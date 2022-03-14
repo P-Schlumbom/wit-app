@@ -69,7 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<double> mean = [0.5, 0.5, 0.5];
   List<double> std = [0.5, 0.5, 0.5];
 
-  File? image = File("assets/logos/TAIAO.png");
+  File? image;// = File("assets/logos/TAIAO.png");
   Model? imageModel;
   //PostProcessingModel? imageModel;
   String? imagePrediction;
@@ -247,8 +247,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   height: 255,
                   fit: BoxFit.cover,)
             )
-                : FlutterLogo(size: 160),
-            const SizedBox(height: 24),
+                : Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              child: const Image(image: AssetImage('assets/logos/TAIAO.png')),
+            ),
+            const SizedBox(height: 48),
             _buildButton(title: 'Pick Camera',
                 icon: Icons.camera_alt_outlined,
                 onClicked: () => _pickImage(context, ImageSource.camera)),
