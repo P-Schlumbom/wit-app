@@ -1,3 +1,4 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
@@ -19,13 +20,16 @@ class ClassificationHistory extends StatefulWidget {
 class _ClassificationHistory extends State<ClassificationHistory> {
   late final Box box;
 
-  void deleteEntry(int index) {
+  Future<void> deleteEntry(int index) async {
     // given a specific result ID, delete the image referenced by it and delete
     // the entry from the Hive box
     ClassificationResult item = box.get(index);
     String imagePath = item.imagePath;
     // delete image
-
+    File? sourceImage = File(imagePath);
+    await sourceImage.delete(); // to complete (?)
+    // delete Hive entry
+    box.deleteAt(index);
   }
 
   List<Container> _buildClassificationResults(){
@@ -50,6 +54,7 @@ class _ClassificationHistory extends State<ClassificationHistory> {
                 MaterialPageRoute(builder: (context) => Classification(classificationID: boxIndex,))
             );
           },
+          trailing: Icon(Icons.delete),
         )
       );
       index++;
