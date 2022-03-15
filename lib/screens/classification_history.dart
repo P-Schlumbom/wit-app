@@ -19,6 +19,15 @@ class ClassificationHistory extends StatefulWidget {
 class _ClassificationHistory extends State<ClassificationHistory> {
   late final Box box;
 
+  void deleteEntry(int index) {
+    // given a specific result ID, delete the image referenced by it and delete
+    // the entry from the Hive box
+    ClassificationResult item = box.get(index);
+    String imagePath = item.imagePath;
+    // delete image
+
+  }
+
   List<Container> _buildClassificationResults(){
     // note that this may possibly be a slightly questionable method currently
     int index = 0;
@@ -46,21 +55,6 @@ class _ClassificationHistory extends State<ClassificationHistory> {
       index++;
       return container;
     }).toList();
-    /*return results.map((result){
-      var container = Container(
-        child: ListTile(
-          leading: ClipOval(
-            child: Image.file(File(result.imagePath),
-                width: 64,
-                height: 64,
-                fit: BoxFit.cover),
-          ),
-          title: Text(result.prediction),
-          subtitle: Text(DateFormat('yyyy-MM-dd - kk:mm').format(result.timestamp)),
-        ),
-      );
-      return container;
-    }).toList();*/
   }
 
   @override

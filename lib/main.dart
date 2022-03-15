@@ -158,6 +158,15 @@ class _MyHomePageState extends State<MyHomePage> {
       );
       if (predImage == null) return;
 
+      // store image locally
+      Directory dir = await getApplicationDocumentsDirectory();
+      final String dirPath = dir.path;
+      // copy image to the new path
+      String savePath = '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}${DateFormat('yyyyMMddkkmm').format(DateTime.now())}.png';
+      debugPrint(savePath);
+      //final XFile storedImage = await predImage.copy(newPath);
+      predImage.saveTo(savePath);
+
       setState(() {
         _isLoading = true;
       });
