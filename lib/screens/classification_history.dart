@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:wit_app/classes/classification_result.dart';
 
@@ -19,17 +20,32 @@ class ClassificationHistory extends StatefulWidget {
 
 class _ClassificationHistory extends State<ClassificationHistory> {
   late final Box box;
+  late final Future<Directory> dir = getApplicationDocumentsDirectory();
+
+  Future<void> dummyFunction(int index) async {
+    debugPrint("delete command for $index");
+  }
 
   Future<void> deleteEntry(int index) async {
     // given a specific result ID, delete the image referenced by it and delete
     // the entry from the Hive box
-    ClassificationResult item = box.get(index);
-    String imagePath = item.imagePath;
+    debugPrint(index.toString());
+    debugPrint((box.values.length).toString());
+    ClassificationResult? item = box.getAt(index);
+    String imagePath = item!.imagePath;
+    debugPrint(imagePath);
+    //TODO: something is screwy with the Hive deletion process!
     // delete image
-    File? sourceImage = File(imagePath);
-    await sourceImage.delete(); // to complete (?)
+    // must check if source image is stored locally or a reference to an on-device image
+    if (imagePath.startsWith('$dir.Path${Platform.pathSeparator}files${Platform.pathSeparator}') == true) {
+      File? sourceImage = File(imagePath);
+      await sourceImage.delete(); // to complete (?)
+    }
     // delete Hive entry
     box.deleteAt(index);
+    setState(() {
+      // refresh the page
+    });
   }
 
   List<Container> _buildClassificationResults(){
@@ -42,9 +58,9 @@ class _ClassificationHistory extends State<ClassificationHistory> {
         child: ListTile(
           leading: ClipOval(
             child: Image.file(File(result.imagePath),
-            width: 64,
-            height: 64,
-            fit: BoxFit.cover),
+                width: 64,
+                height: 64,
+                fit: BoxFit.cover),
           ),
           title: Text(result.prediction),
           subtitle: Text(DateFormat('yyyy-MM-dd - kk:mm').format(result.timestamp)),
@@ -54,8 +70,11 @@ class _ClassificationHistory extends State<ClassificationHistory> {
                 MaterialPageRoute(builder: (context) => Classification(classificationID: boxIndex,))
             );
           },
-          trailing: Icon(Icons.delete),
-        )
+          trailing: IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () => deleteEntry(boxIndex),
+              ),
+        ),
       );
       index++;
       return container;
