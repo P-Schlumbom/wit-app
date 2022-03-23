@@ -26,6 +26,9 @@ import 'screens/classification_history.dart';
 import 'screens/classification.dart';
 import 'screens/model_manager.dart';
 
+
+//TODO: error: Unhandled Exception: MissingPluginException(No implementation found for method loadModel on channel pytorch_mobile)
+
 void main() async {
   // Initialize hive database and prepare it
   await Hive.initFlutter();
@@ -161,11 +164,14 @@ class _MyHomePageState extends State<MyHomePage> {
       // store image locally
       Directory dir = await getApplicationDocumentsDirectory();
       final String dirPath = dir.path;
+      // IF image is not picked from gallery,
       // copy image to the new path
-      String savePath = '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}${DateFormat('yyyyMMddkkmmss').format(DateTime.now())}.png';
-      debugPrint(savePath);
-      //final XFile storedImage = await predImage.copy(newPath);
-      predImage.saveTo(savePath);
+      if (source != ImageSource.gallery){
+        String savePath = '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}${DateFormat('yyyyMMddkkmmss').format(DateTime.now())}.png';
+        //debugPrint(savePath);
+        //final XFile storedImage = await predImage.copy(newPath);
+        predImage.saveTo(savePath);
+      }
 
       setState(() {
         _isLoading = true;
