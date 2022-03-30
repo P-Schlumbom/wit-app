@@ -19,6 +19,26 @@ class _Classification extends State<Classification>{
   late final Box box;
   late final ClassificationResult classificationResult;
 
+  String probability2String(double probability){
+    if (probability <= 0.001) {
+      return "monstrously infinitesimal confidence";
+    } else if (probability > 0.001 && probability <= 0.022) {
+      return "abysmally low confidence";
+    } else if (probability > 0.022 && probability <= 0.158) {
+      return "very low confidence";
+    } else if (probability > 0.158 && probability <= 0.50) {
+      return "low confidence";
+    } else if (probability > 0.50 && probability <= 0.841) {
+      return "reasonable confidence";
+    } else if (probability > 0.841 && probability <= 0.977) {
+      return "very high confidence";
+    } else if (probability > 0.977 && probability <= 0.998) {
+      return "extremely high confidence";
+    } else {
+      return "positively overwhelming confidence";
+    }
+  }
+
   List<String> createNamesList(List<String> engNames, List<String> mriNames){
     List<String> commonNames = <String>[];
     if (engNames.isEmpty) {
@@ -63,7 +83,7 @@ class _Classification extends State<Classification>{
     return returnName;
   }
 
-  RichText createNameDetailsText(List<String> engNames, List<String> mriNames) {
+  RichText createNameDetailsText(List<String> engNames, List<String> mriNames, double probability) {
     if (engNames.isEmpty && mriNames.isEmpty || (engNames[0] == "" && mriNames[0] == "")){
       return RichText(
           text: const TextSpan(
@@ -94,7 +114,7 @@ class _Classification extends State<Classification>{
       //return "This species is commonly known as a ${topName}.";
       return RichText(text: TextSpan(
         children: <TextSpan>[
-          const TextSpan(text: "This species is commonly known as a "),
+          TextSpan(text: "I have ${probability2String(probability)} that this is a "),
           TextSpan(text: topName, style: const TextStyle(fontWeight: FontWeight.bold)),
           const TextSpan(text: ".")
         ],
@@ -106,8 +126,9 @@ class _Classification extends State<Classification>{
       //    "It is also known by a number of other names, such as: ${remainingNames.join(", ")}";
       return RichText(text: TextSpan(
         children: <TextSpan>[
-          const TextSpan(text: "This species is commonly known as a "),
+          TextSpan(text: "I have ${probability2String(probability)} that this is a "),
           TextSpan(text: topName, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const TextSpan(text: "."),
           const TextSpan(text: "\n\nIt is also known by a number of other names, such as: \n"),
           TextSpan(text: remainingNames.join(", ")),
           const TextSpan(text: ".")
@@ -158,13 +179,21 @@ class _Classification extends State<Classification>{
                           const SizedBox(height: 12),
                           Text(
                             "Prediction probability: ${(classificationResult.topFivePredictions[0].probability).toStringAsPrecision(3)}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.0,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           /*Text(
                             //"Also known as: ${createNamesList(classificationResult.topFivePredictions[0].nameData.engNames, classificationResult.topFivePredictions[0].nameData.mriNames)}",
                             createNameDetailsText(classificationResult.topFivePredictions[0].nameData.engNames, classificationResult.topFivePredictions[0].nameData.mriNames),
                           ),*/
-                          createNameDetailsText(classificationResult.topFivePredictions[0].nameData.engNames, classificationResult.topFivePredictions[0].nameData.mriNames),
+                          createNameDetailsText(
+                              classificationResult.topFivePredictions[0].nameData.engNames,
+                              classificationResult.topFivePredictions[0].nameData.mriNames,
+                              classificationResult.topFivePredictions[0].probability
+                          ),
                           const SizedBox(height: 12),
                           const Text(
                             "Top Five Predictions:",
