@@ -27,8 +27,6 @@ import 'screens/classification.dart';
 import 'screens/model_manager.dart';
 
 
-//TODO: error: Unhandled Exception: MissingPluginException(No implementation found for method loadModel on channel pytorch_mobile)
-
 void main() async {
   // Initialize hive database and prepare it
   await Hive.initFlutter();
