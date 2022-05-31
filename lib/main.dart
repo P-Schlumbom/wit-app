@@ -12,9 +12,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:pytorch_mobile/pytorch_mobile.dart';
-import 'package:pytorch_mobile/model.dart';
-import 'package:pytorch_mobile/enums/dtype.dart';
+//import 'package:pytorch_mobile/pytorch_mobile.dart';
+//import 'package:pytorch_mobile/model.dart';
+//import 'package:pytorch_mobile/enums/dtype.dart';
 
 import 'package:flutter/foundation.dart';  // for debugPrint
 import 'package:tflite_flutter_helper/tflite_flutter_helper.dart';
@@ -90,7 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
   };
 
   File? image;// = File("assets/logos/TAIAO.png");
-  Model? imageModel;
+  //Model? imageModel;
   //PostProcessingModel? imageModel;
   String? imagePrediction;
   late final Box box;
@@ -165,7 +165,7 @@ class _MyHomePageState extends State<MyHomePage> {
     String? modelPath = modelPaths[modelID];
 
     try {
-      imageModel = await PyTorchMobile.loadModel(modelPath!);
+      //imageModel = await PyTorchMobile.loadModel(modelPath!);
     } on PlatformException {
       debugPrint("only supported for android and ios for now");
     }
@@ -199,7 +199,7 @@ class _MyHomePageState extends State<MyHomePage> {
       // PYTORCH PREDICTION
       int? modelDim = modelDims[modelID];
 
-      List? prediction = await imageModel!.getImagePredictionList(
+      /*List? prediction = await imageModel!.getImagePredictionList(
         File(predImage.path),
         modelDim!,
         modelDim,
@@ -208,9 +208,10 @@ class _MyHomePageState extends State<MyHomePage> {
       );
       prediction = applySoftmax(prediction);
       List<Prediction> topFivePredictions = await _getTopFivePredictions(prediction, "assets/labels/species_names.csv");
-      box.add(ClassificationResult(topFivePredictions[0].species, predImage.path, DateTime.now(), topFivePredictions));
+      box.add(ClassificationResult(topFivePredictions[0].species, predImage.path, DateTime.now(), topFivePredictions));*/
 
       // TFLITE PREDICTION
+      List? prediction;
       img.Image imageInput = img.decodeImage(File(predImage.path).readAsBytesSync())!;
       Map<String, double> pred = _classifier.predict(imageInput);
       prediction = applySoftmax(pred.values.toList());
