@@ -17,6 +17,7 @@ import 'package:pytorch_mobile/model.dart';
 import 'package:pytorch_mobile/enums/dtype.dart';
 
 import 'package:flutter/foundation.dart';  // for debugPrint
+import 'package:tflite_flutter_helper/tflite_flutter_helper.dart';
 
 import 'classes/classification_result.dart';
 //import 'classes/custom_models.dart';  // potential alternative to pytorch_mobile/model.dart
@@ -25,6 +26,13 @@ import 'classes/name_data.dart';
 import 'screens/classification_history.dart';
 import 'screens/classification.dart';
 import 'screens/model_manager.dart';
+
+// TFLITE PACKAGES
+import 'package:image/image.dart' as img;
+import 'package:tflite_flutter/tflite_flutter.dart';
+
+import 'classifier.dart';
+import 'classifier_efficientnet.dart';
 
 
 //TODO: error: Unhandled Exception: MissingPluginException(No implementation found for method loadModel on channel pytorch_mobile)
@@ -88,6 +96,8 @@ class _MyHomePageState extends State<MyHomePage> {
   late final Box box;
   late final Box speciesNamesBox;
   late final Map<String, dynamic> speciesNamesMap;
+
+  late Classifier _classifier;
 
   Future<List<String>> _getLabels(String labelPath) async {
     String labelsData = await rootBundle.loadString(labelPath);
@@ -186,6 +196,7 @@ class _MyHomePageState extends State<MyHomePage> {
         _isLoading = true;
       });
 
+      // PYTORCH PREDICTION
       int? modelDim = modelDims[modelID];
 
       List? prediction = await imageModel!.getImagePredictionList(
@@ -198,6 +209,32 @@ class _MyHomePageState extends State<MyHomePage> {
       prediction = applySoftmax(prediction);
       List<Prediction> topFivePredictions = await _getTopFivePredictions(prediction, "assets/labels/species_names.csv");
       box.add(ClassificationResult(topFivePredictions[0].species, predImage.path, DateTime.now(), topFivePredictions));
+
+      // TFLITE PREDICTION
+      img.Image imageInput = img.decodeImage(File(predImage.path).readAsBytesSync())!;
+      Map<String, double> pred = _classifier.predict(imageInput);
+      prediction = applySoftmax(pred.values.toList());
+      List<Prediction> newTopFivePredictions = await _getTopFivePredictions(prediction, "assets/labels/species_names.csv");
+      debugPrint("TFLITE PREDICTIONS:");
+      debugPrint("${newTopFivePredictions[0].species}: ${newTopFivePredictions[0].probability}");
+      debugPrint("${newTopFivePredictions[1].species}: ${newTopFivePredictions[1].probability}");
+      debugPrint("${newTopFivePredictions[2].species}: ${newTopFivePredictions[2].probability}");
+      debugPrint("${newTopFivePredictions[3].species}: ${newTopFivePredictions[3].probability}");
+      debugPrint("${newTopFivePredictions[4].species}: ${newTopFivePredictions[4].probability}");
+
+      /*img.Image tfImage = img.decodeImage(File(predImage.path).readAsBytesSync())!; //img.Image.file(File(predImage.path));
+
+      _inputImage = TensorImage(_inputType);
+      _inputImage.loadImage(tfImage);
+      _inputImage = _preProcess();
+      
+      interpreter.run(_inputImage.buffer, _outputBuffer.getBuffer());
+
+      Map<String, double> labeledProb = TensorLabel.fromList(
+          speciesNamesMap.keys.toList(), _probabilityProcessor.process(_outputBuffer))
+          .getMapWithFloatValue();*/
+
+      // END OF TFLITE PREDICTION
 
       setState(() => this.image = File(predImage.path));
       setState(() {
@@ -244,6 +281,8 @@ class _MyHomePageState extends State<MyHomePage> {
     speciesNamesBox = Hive.box('namesBox');
     loadNamesData();
     loadModel();
+
+    _classifier = ClassifierEfficientNet();
   }
 
   @override

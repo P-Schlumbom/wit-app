@@ -45,6 +45,9 @@ dependencies:
   hive_generator: # for TypeAdapter
   build_runner: # for TypeAdapter
   pytorch_mobile:
+  logger:
+  tflite_flutter:  # for tensorflow models
+  tflite_flutter_helper:
 
 dev_dependencies:
   flutter_test:
