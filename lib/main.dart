@@ -17,7 +17,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 //import 'package:pytorch_mobile/enums/dtype.dart';
 
 import 'package:flutter/foundation.dart';  // for debugPrint
-import 'package:tflite_flutter_helper/tflite_flutter_helper.dart';
+//import 'package:tflite_flutter_helper/tflite_flutter_helper.dart';
 
 import 'classes/classification_result.dart';
 //import 'classes/custom_models.dart';  // potential alternative to pytorch_mobile/model.dart
