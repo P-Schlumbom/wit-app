@@ -197,6 +197,7 @@ class _MyHomePageState extends State<MyHomePage> {
       });
 
       // PYTORCH PREDICTION
+      //TODO: delete Podfile / edit it to use correct version of TensorFlowLiteC?
       int? modelDim = modelDims[modelID];
 
       /*List? prediction = await imageModel!.getImagePredictionList(
