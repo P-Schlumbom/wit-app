@@ -83,11 +83,17 @@ class _Classification extends State<Classification>{
     return returnName;
   }
 
-  RichText createNameDetailsText(List<String> engNames, List<String> mriNames, double probability) {
+  RichText createNameDetailsText(String prediction, List<String> engNames, List<String> mriNames, double probability) {
+    String confidenceText = "I have ${probability2String(probability)} that this is a ";
+
     if (engNames.isEmpty && mriNames.isEmpty || (engNames[0] == "" && mriNames[0] == "")){
       return RichText(
-          text: const TextSpan(
-            text:  "There are no common names for this species.",
+          text: TextSpan(
+            children: <TextSpan>[
+              TextSpan(text: confidenceText),
+              TextSpan(text: prediction, style: const TextStyle(fontWeight: FontWeight.bold)),
+              const TextSpan(text: ". I don't know of any common names for this species.")
+            ],
             style: TextStyle(color: Colors.black),
           ),
       );
@@ -114,7 +120,7 @@ class _Classification extends State<Classification>{
       //return "This species is commonly known as a ${topName}.";
       return RichText(text: TextSpan(
         children: <TextSpan>[
-          TextSpan(text: "I have ${probability2String(probability)} that this is a "),
+          TextSpan(text: confidenceText),
           TextSpan(text: topName, style: const TextStyle(fontWeight: FontWeight.bold)),
           const TextSpan(text: ".")
         ],
@@ -126,7 +132,7 @@ class _Classification extends State<Classification>{
       //    "It is also known by a number of other names, such as: ${remainingNames.join(", ")}";
       return RichText(text: TextSpan(
         children: <TextSpan>[
-          TextSpan(text: "I have ${probability2String(probability)} that this is a "),
+          TextSpan(text: confidenceText),
           TextSpan(text: topName, style: const TextStyle(fontWeight: FontWeight.bold)),
           const TextSpan(text: "."),
           const TextSpan(text: "\n\nIt is also known by a number of other names, such as: \n"),
@@ -190,6 +196,7 @@ class _Classification extends State<Classification>{
                             createNameDetailsText(classificationResult.topFivePredictions[0].nameData.engNames, classificationResult.topFivePredictions[0].nameData.mriNames),
                           ),*/
                           createNameDetailsText(
+                              classificationResult.prediction,
                               classificationResult.topFivePredictions[0].nameData.engNames,
                               classificationResult.topFivePredictions[0].nameData.mriNames,
                               classificationResult.topFivePredictions[0].probability
