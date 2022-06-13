@@ -46,12 +46,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'WIT app',
       theme: ThemeData(
         primarySwatch: Colors.teal,
         scaffoldBackgroundColor: Color(0xFFeff6e0),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'What Is This?'),
     );
   }
 }
@@ -69,6 +69,15 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isLoading = false;
   List<double> mean = [0.5, 0.5, 0.5];
   List<double> std = [0.5, 0.5, 0.5];
+  String modelID = "species_model_squeezenet";
+  Map<String, String> modelPaths = {
+    "species_model_s": "assets/models/species_model_s.pt",
+    "species_model_squeezenet": "assets/models/species_model_squeezenet.pt"
+  };
+  Map<String, int> modelDims = {
+    "species_model_s": 768,
+    "species_model_squeezenet": 224
+  };
 
   File? image;// = File("assets/logos/TAIAO.png");
   Model? imageModel;
@@ -141,10 +150,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future loadModel() async {
-    String pathModel = "assets/models/species_model_s.pt";
+    String? modelPath = modelPaths[modelID];
 
     try {
-      imageModel = await PyTorchMobile.loadModel(pathModel);
+      imageModel = await PyTorchMobile.loadModel(modelPath!);
     } on PlatformException {
       debugPrint("only supported for android and ios for now");
     }
@@ -175,10 +184,12 @@ class _MyHomePageState extends State<MyHomePage> {
         _isLoading = true;
       });
 
+      int? modelDim = modelDims[modelID];
+
       List? prediction = await imageModel!.getImagePredictionList(
         File(predImage.path),
-        768,
-        768,
+        modelDim!,
+        modelDim,
         mean: mean,
         std: std,
       );
