@@ -265,11 +265,28 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           children: <Widget>[
             Spacer(),
+            Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: const [
+                //Image(image: AssetImage('assets/logos/Waikato Regional Council logo.jpg'),),
+                //Image(image: AssetImage('assets/logos/TAIAO.png')),
+                SizedBox(
+                  height: 64.0,
+                  child: Image(image: AssetImage('assets/logos/TAIAO.png')),
+                ),
+                SizedBox(
+                  height: 126.0,
+                  child: Image(image: AssetImage('assets/logos/UoW-logo-CMYK-vert_scaled.png')),
+                )
+              ],
+            ),
+            const SizedBox(height: 48),
             image != null ? ClipOval(
                 child: Image.file(
                   image!,
-                  width: 255,
-                  height: 255,
+                  width: 155,
+                  height: 155,
                   fit: BoxFit.cover,)
             )
                 : Container(
