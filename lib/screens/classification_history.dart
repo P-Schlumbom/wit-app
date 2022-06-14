@@ -34,7 +34,6 @@ class _ClassificationHistory extends State<ClassificationHistory> {
     ClassificationResult? item = box.getAt(index);
     String imagePath = item!.imagePath;
     debugPrint(imagePath);
-    //TODO: something is screwy with the Hive deletion process!
     // delete image
     // must check if source image is stored locally or a reference to an on-device image
     if (imagePath.startsWith('$dir.Path${Platform.pathSeparator}files${Platform.pathSeparator}') == true) {
