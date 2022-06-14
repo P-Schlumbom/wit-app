@@ -69,8 +69,8 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isLoading = false;
   List<double> mean = [0.5, 0.5, 0.5];
   List<double> std = [0.5, 0.5, 0.5];
-  //String modelID = "species_model_squeezenet";
-  String modelID = "species_model_s";
+  String modelID = "species_model_squeezenet";
+  //String modelID = "species_model_s";
   Map<String, String> modelPaths = {
     "species_model_s": "assets/models/species_model_s.pt",
     "species_model_squeezenet": "assets/models/species_model_squeezenet.pt"
