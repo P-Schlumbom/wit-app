@@ -276,24 +276,24 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Image(image: AssetImage('assets/logos/TAIAO.png')),
                 ),
                 SizedBox(
-                  height: 126.0,
+                  height: 124.0,
                   child: Image(image: AssetImage('assets/logos/UoW-logo-CMYK-vert_scaled.png')),
                 )
               ],
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 24),
             image != null ? ClipOval(
                 child: Image.file(
                   image!,
-                  width: 155,
-                  height: 155,
+                  width: 224,
+                  height: 224,
                   fit: BoxFit.cover,)
             )
-                : Container(
+                : const SizedBox.shrink(),/*Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
               child: const Image(image: AssetImage('assets/logos/TAIAO.png')),
-            ),
-            const SizedBox(height: 48),
+            ),*/
+            const SizedBox(height: 12),
             _buildButton(title: 'Pick Camera',
                 icon: Icons.camera_alt_outlined,
                 onClicked: () => _pickImage(context, ImageSource.camera)),
@@ -319,6 +319,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       MaterialPageRoute(builder: (context) => const ModelManager())
                   );
                 }),
+
             Spacer(),
           ],
         ),
