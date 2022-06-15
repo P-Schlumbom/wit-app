@@ -271,14 +271,18 @@ class _MyHomePageState extends State<MyHomePage> {
               children: const [
                 //Image(image: AssetImage('assets/logos/Waikato Regional Council logo.jpg'),),
                 //Image(image: AssetImage('assets/logos/TAIAO.png')),
-                SizedBox(
-                  height: 64.0,
+                Expanded(child: SizedBox(
+                  //height: 64.0,
                   child: Image(image: AssetImage('assets/logos/TAIAO.png')),
                 ),
-                SizedBox(
-                  height: 124.0,
-                  child: Image(image: AssetImage('assets/logos/UoW-logo-CMYK-vert_scaled.png')),
+                ),
+                SizedBox(width: 6),
+                Expanded(child: SizedBox(
+                  //height: 64.0,
+                  child: Image(image: AssetImage('assets/logos/AI_institute.png')),
                 )
+                ),
+
               ],
             ),
             const SizedBox(height: 24),
