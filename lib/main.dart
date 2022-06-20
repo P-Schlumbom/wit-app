@@ -18,6 +18,14 @@ import 'package:pytorch_mobile/enums/dtype.dart';
 
 import 'package:flutter/foundation.dart';  // for debugPrint
 
+import 'package:shared_preferences_android/shared_preferences_android.dart';
+import 'package:shared_preferences_ios/shared_preferences_ios.dart';
+
+import 'package:path_provider_android/path_provider_android.dart';
+import 'package:path_provider_ios/path_provider_ios.dart';
+
+import 'package:image_picker/image_picker.dart';
+
 import 'classes/classification_result.dart';
 //import 'classes/custom_models.dart';  // potential alternative to pytorch_mobile/model.dart
 import 'classes/prediction.dart';
@@ -28,6 +36,13 @@ import 'screens/model_manager.dart';
 
 
 void main() async {
+
+  if (Platform.isAndroid) SharedPreferencesAndroid.registerWith();
+  if (Platform.isIOS) SharedPreferencesIOS.registerWith();
+
+  if (Platform.isAndroid) PathProviderAndroid.registerWith();
+  if (Platform.isIOS) PathProviderIOS.registerWith();
+
   // Initialize hive database and prepare it
   await Hive.initFlutter();
   Hive.registerAdapter(ClassificationResultAdapter());  // register the adapter
@@ -271,14 +286,18 @@ class _MyHomePageState extends State<MyHomePage> {
               children: const [
                 //Image(image: AssetImage('assets/logos/Waikato Regional Council logo.jpg'),),
                 //Image(image: AssetImage('assets/logos/TAIAO.png')),
-                SizedBox(
-                  height: 64.0,
+                Expanded(child: SizedBox(
+                  //height: 64.0,
                   child: Image(image: AssetImage('assets/logos/TAIAO.png')),
                 ),
-                SizedBox(
-                  height: 124.0,
-                  child: Image(image: AssetImage('assets/logos/UoW-logo-CMYK-vert_scaled.png')),
+                ),
+                SizedBox(width: 6),
+                Expanded(child: SizedBox(
+                  //height: 64.0,
+                  child: Image(image: AssetImage('assets/logos/AI_institute.png')),
                 )
+                ),
+
               ],
             ),
             const SizedBox(height: 24),

@@ -29,6 +29,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  shared_preferences_android:
+  shared_preferences_ios:
+  path_provider_android:
+  path_provider_ios:
 
 
   # The following adds the Cupertino Icons font to your application.
