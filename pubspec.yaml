@@ -63,7 +63,7 @@ dev_dependencies:
   flutter_lints: ^1.0.0
 
 flutter_icons:
-  image_path: "assets/logos/TAIAO_crop_1.png"
+  image_path: "assets/logos/TAIAO_crop_nontransparent.png"
   android: true
   ios: true
 
