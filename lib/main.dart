@@ -67,6 +67,7 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Color(0xFFeff6e0),
       ),
       home: const MyHomePage(title: 'What Is This?'),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
