@@ -174,7 +174,7 @@ class _Classification extends State<Classification>{
                         children: [
                           Container(
                             padding: const EdgeInsets.only(bottom: 8),
-                            child: Text(
+                            child: SelectableText(
                               classificationResult.prediction,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
