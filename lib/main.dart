@@ -67,6 +67,7 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Color(0xFFeff6e0),
       ),
       home: const MyHomePage(title: 'What Is This?'),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -288,6 +289,27 @@ class _MyHomePageState extends State<MyHomePage> {
                 //Image(image: AssetImage('assets/logos/TAIAO.png')),
                 Expanded(child: SizedBox(
                   //height: 64.0,
+                  child: Image(image: AssetImage('assets/logos/2020_School of Comp and Math Sciences w Logo.png')),
+                ),
+                ),
+                SizedBox(width: 6),
+                Expanded(child: SizedBox(
+                  //height: 64.0,
+                  child: Image(image: AssetImage('assets/logos/UCBlack_cropped.png')),
+                )
+                ),
+
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: const [
+                //Image(image: AssetImage('assets/logos/Waikato Regional Council logo.jpg'),),
+                //Image(image: AssetImage('assets/logos/TAIAO.png')),
+                Expanded(child: SizedBox(
+                  //height: 64.0,
                   child: Image(image: AssetImage('assets/logos/TAIAO.png')),
                 ),
                 ),
@@ -300,8 +322,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
               ],
             ),
-            const SizedBox(height: 24),
-            image != null ? ClipOval(
+            const SizedBox(height: 36),
+            /*image != null ? ClipOval(
                 child: Image.file(
                   image!,
                   width: 224,
@@ -312,7 +334,7 @@ class _MyHomePageState extends State<MyHomePage> {
               margin: const EdgeInsets.symmetric(horizontal: 20),
               child: const Image(image: AssetImage('assets/logos/TAIAO.png')),
             ),*/
-            const SizedBox(height: 12),
+            const SizedBox(height: 12),*/
             _buildButton(title: 'Pick Camera',
                 icon: Icons.camera_alt_outlined,
                 onClicked: () => _pickImage(context, ImageSource.camera)),
