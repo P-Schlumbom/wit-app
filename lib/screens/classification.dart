@@ -1,11 +1,14 @@
 //import 'dart:html';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 
 import 'package:wit_app/classes/classification_result.dart';
+
+import 'package:wit_app/globals.dart';
 
 class Classification extends StatefulWidget {
   final int classificationID;
@@ -18,6 +21,10 @@ class Classification extends StatefulWidget {
 class _Classification extends State<Classification>{
   late final Box box;
   late final ClassificationResult classificationResult;
+  late final String stringID;
+  late final String speciesName;
+  late final List<String> engNames;
+  late final List<String> mriNames;
 
   String probability2String(double probability){
     if (probability <= 0.001) {
@@ -145,11 +152,52 @@ class _Classification extends State<Classification>{
     }
   }
 
+  Card createDetailsCard(List<TextSpan> details, String detailType){
+    Color tileColor = const Color(0xFFeff6e0);
+    Color textColor = Colors.teal;
+    switch (detailType) {
+      case "helper":
+        tileColor = const Color(0xFFeff6e0);
+        textColor = Colors.teal;
+        break;
+      case "warning":
+        tileColor = Colors.teal;
+        textColor = const Color(0xFFeff6e0);
+        break;
+      case "alert":
+        tileColor = Colors.deepOrange;
+        textColor = const Color(0xFFeff6e0);
+        break;
+    }
+
+    return Card(
+        elevation: 2,
+        color: tileColor,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          child: RichText(
+            text: TextSpan(
+              children: details,
+              style: TextStyle(color: textColor)
+            ),
+          )
+        ),
+    );
+  }
+
+  Future loadNamesData() async {
+    stringID = classificationResult.topFivePredictions[0].index.toString();
+    engNames = List<String>.from(speciesNamesMap[classificationResult.topFivePredictions[0].index.toString()]["eng"]);
+    mriNames = List<String>.from(speciesNamesMap[classificationResult.topFivePredictions[0].index.toString()]["mri"]);
+  }
+
   @override
   void initState() {
     super.initState();
     box = Hive.box('resultsBox');
+    debugPrint("${widget.classificationID}");
     classificationResult = box.getAt(widget.classificationID);  // for demo purposes, select first(?) entry for now.
+    loadNamesData();
   }
 
   @override
@@ -190,6 +238,11 @@ class _Classification extends State<Classification>{
                               fontSize: 16.0,
                             ),
                           ),
+                          createDetailsCard(<TextSpan>[
+                            const TextSpan(text: "Are you trying to classify plants?\t"),
+                            const TextSpan(text: "We recommend taking close-up photographs of individual leaves, rather than "
+                                "images of the whole plant - the model tends to perform better that way.")
+                          ], "helper"),
                           const SizedBox(height: 12),
                           /*Text(
                             //"Also known as: ${createNamesList(classificationResult.topFivePredictions[0].nameData.engNames, classificationResult.topFivePredictions[0].nameData.mriNames)}",
@@ -197,10 +250,68 @@ class _Classification extends State<Classification>{
                           ),*/
                           createNameDetailsText(
                               classificationResult.prediction,
-                              classificationResult.topFivePredictions[0].nameData.engNames,
-                              classificationResult.topFivePredictions[0].nameData.mriNames,
+                              engNames,
+                              mriNames,
                               classificationResult.topFivePredictions[0].probability
+                              /*speciesNamesMap[classificationResult.topFivePredictions[0].index.toString()]["eng"],
+                              speciesNamesMap[classificationResult.topFivePredictions[0].index.toString()]["mri"],
+                              classificationResult.topFivePredictions[0].probability*/
                           ),
+                          const SizedBox(height: 12),
+                          createDetailsCard(<TextSpan>[
+                            const TextSpan(text: "The Ministry of Primary Industries (MPI) considers this to be an "),
+                            const TextSpan(text: "unwanted ", style: TextStyle(fontWeight: FontWeight.bold)),
+                            const TextSpan(text: "organism.")
+                          ], "warning"),
+                          createDetailsCard(<TextSpan>[
+                            const TextSpan(text: "There are multiple variants of this species, some of which are "
+                                "considered notifiable pests. Unfortunately, the classifier cannot distinguish between these variants."),
+                            const TextSpan(text: "\n\n"),
+                            const TextSpan(text: "A notifiable organism could seriously harm New Zealand's primary production or our "
+                                "trade and market access. If you suspect this is a notifiable variant, consider following the steps "
+                                "outlined by the "),
+                            const TextSpan(
+                              text: "Ministry of Primary Industries.",
+                              style: TextStyle(color: Colors.amber),
+                              //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                            )
+                          ], "warning"),
+                          createDetailsCard(<TextSpan>[
+                            const TextSpan(text: "Warning! This appears to be a "),
+                            const TextSpan(text: "notifiable organism!", style: TextStyle(fontWeight: FontWeight.bold)),
+                            const TextSpan(text: "\n\n"),
+                            const TextSpan(text: "Notifiable organisms could seriously harm New Zealand's primary production or our "
+                                "trade and market access."),
+                            const TextSpan(text: "\n\n"),
+                            const TextSpan(text: "If the model's assessment seems reasonable, we strongly recommend reporting this "
+                                "organism by following the steps outlined by the Ministry of Primary Industries (MPI) "),
+                            const TextSpan(
+                              text: "here.",
+                              style: TextStyle(color: Colors.amber),
+                              //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                            ),
+                            const TextSpan(text: "\n\n"),
+                            const TextSpan(text: "Please note that if you spot a notifiable organism, you have a legal obligation to "
+                                "report it under the "),
+                            const TextSpan(
+                              text: "Biosecurity Act 1993",
+                              style: TextStyle(color: Colors.amber),
+                              //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                            ),
+                            const TextSpan(text: " ("),
+                            const TextSpan(
+                              text: "Section 44",
+                              style: TextStyle(color: Colors.amber),
+                              //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                            ),
+                            const TextSpan(text: " and "),
+                            const TextSpan(
+                              text: "46",
+                              style: TextStyle(color: Colors.amber),
+                              //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                            ),
+                            const TextSpan(text: ").")
+                          ], "alert"),
                           const SizedBox(height: 12),
                           const Text(
                             "Top Five Predictions:",

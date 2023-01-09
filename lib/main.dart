@@ -26,6 +26,7 @@ import 'package:path_provider_ios/path_provider_ios.dart';
 
 import 'package:image_picker/image_picker.dart';
 
+import 'globals.dart';
 import 'classes/classification_result.dart';
 //import 'classes/custom_models.dart';  // potential alternative to pytorch_mobile/model.dart
 import 'classes/prediction.dart';
@@ -101,7 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String? imagePrediction;
   late final Box box;
   late final Box speciesNamesBox;
-  late final Map<String, dynamic> speciesNamesMap;
+  //late final Map<String, dynamic> speciesNamesMap;
 
   Future<List<String>> _getLabels(String labelPath) async {
     String labelsData = await rootBundle.loadString(labelPath);
@@ -154,7 +155,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future loadNamesData() async {
-    if (speciesNamesBox.values.length != 11047) {
+    /*if (speciesNamesBox.values.length != 11047) {
       debugPrint("Updating speciesNamesBox because it currently contains ${speciesNamesBox.values.length} items instead of 11047");
       String namesDataString = await rootBundle.loadString("assets/labels/class_metadata.json");
       speciesNamesMap = jsonDecode(namesDataString);
@@ -162,6 +163,18 @@ class _MyHomePageState extends State<MyHomePage> {
       for (int i = 0; i < 11047; i++) {
         speciesNamesBox.put(i, _getNameData(i));
       }
+    } else {
+      debugPrint("Loading data string");
+      String namesDataString = await rootBundle.loadString("assets/labels/class_metadata.json");
+      speciesNamesMap = jsonDecode(namesDataString);
+    }*/
+    // instead of above approach, always reload names data every time
+    debugPrint("Loading species data");
+    String namesDataString = await rootBundle.loadString("assets/labels/class_metadata.json");
+    speciesNamesMap = jsonDecode(namesDataString);
+
+    for (int i = 0; i < 11047; i++) {
+      speciesNamesBox.put(i, _getNameData(i));
     }
   }
 
