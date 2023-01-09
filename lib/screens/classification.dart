@@ -208,10 +208,8 @@ class _Classification extends State<Classification>{
     }
     if (plantCount > nonEmptyCount ~/2 || speciesNamesMap[stringID]["kingdom"] == "Plantae"){  // if most top 5 species are plants or the top prediction is a plant, the prediction is plant oriented
       isPlantOriented = true;  // needs to be redone
-    }
-    // set unwanted status
-    if (speciesNamesMap[stringID]["unwanted"] == "Yes") {
-      isUnwanted = true;
+    } else {
+      isPlantOriented = false;
     }
     // set notifiable status
     if (speciesNamesMap[stringID]["notifiable"] == "Yes"){
@@ -220,6 +218,12 @@ class _Classification extends State<Classification>{
       notifiableStatus = 0;
     } else {
       notifiableStatus = -1;
+    }
+    // set unwanted status
+    if (speciesNamesMap[stringID]["unwanted"] == "Yes" && notifiableStatus == -1) {
+      isUnwanted = true;
+    } else {
+      isUnwanted = false;
     }
   }
 
@@ -270,11 +274,14 @@ class _Classification extends State<Classification>{
                               fontSize: 16.0,
                             ),
                           ),
-                          createDetailsCard(<TextSpan>[
+                          Visibility(
+                            visible: isPlantOriented,
+                              child: createDetailsCard(<TextSpan>[
                             const TextSpan(text: "Are you trying to classify plants?\t"),
                             const TextSpan(text: "We recommend taking close-up photographs of individual leaves, rather than "
-                                "images of the whole plant - the model tends to perform better that way.")
-                          ], "helper"),
+                            "images of the whole plant - the model tends to perform better that way.")
+                            ], "helper")
+                          ),
                           const SizedBox(height: 12),
                           /*Text(
                             //"Also known as: ${createNamesList(classificationResult.topFivePredictions[0].nameData.engNames, classificationResult.topFivePredictions[0].nameData.mriNames)}",
@@ -290,64 +297,72 @@ class _Classification extends State<Classification>{
                               classificationResult.topFivePredictions[0].probability*/
                           ),
                           const SizedBox(height: 12),
-
-                          createDetailsCard(
+                          Visibility(
+                            visible: isUnwanted,
+                              child: createDetailsCard(
                               <TextSpan>[
-                            const TextSpan(text: "The Ministry of Primary Industries (MPI) considers this to be an "),
-                            const TextSpan(text: "unwanted ", style: TextStyle(fontWeight: FontWeight.bold)),
-                            const TextSpan(text: "organism.")
-                          ], "warning"),
-                          createDetailsCard(
-                              <TextSpan>[
-                            const TextSpan(text: "There are multiple variants of this species, some of which are "
-                                "considered notifiable pests. Unfortunately, the classifier cannot distinguish between these variants."),
-                            const TextSpan(text: "\n\n"),
-                            const TextSpan(text: "A notifiable organism could seriously harm New Zealand's primary production or our "
-                                "trade and market access. If you suspect this is a notifiable variant, consider following the steps "
-                                "outlined by the "),
-                            const TextSpan(
-                              text: "Ministry of Primary Industries.",
-                              style: TextStyle(color: Colors.amber),
-                              //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                            )
-                          ], "warning"),
-                          createDetailsCard(
-                              <TextSpan>[
-                            const TextSpan(text: "Warning! This appears to be a "),
-                            const TextSpan(text: "notifiable organism!", style: TextStyle(fontWeight: FontWeight.bold)),
-                            const TextSpan(text: "\n\n"),
-                            const TextSpan(text: "Notifiable organisms could seriously harm New Zealand's primary production or our "
-                                "trade and market access."),
-                            const TextSpan(text: "\n\n"),
-                            const TextSpan(text: "If the model's assessment seems reasonable, we strongly recommend reporting this "
-                                "organism by following the steps outlined by the Ministry of Primary Industries (MPI) "),
-                            const TextSpan(
-                              text: "here.",
-                              style: TextStyle(color: Colors.amber),
-                              //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                            ),
-                            const TextSpan(text: "\n\n"),
-                            const TextSpan(text: "Please note that if you spot a notifiable organism, you have a legal obligation to "
-                                "report it under the "),
-                            const TextSpan(
-                              text: "Biosecurity Act 1993",
-                              style: TextStyle(color: Colors.amber),
-                              //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                            ),
-                            const TextSpan(text: " ("),
-                            const TextSpan(
-                              text: "Section 44",
-                              style: TextStyle(color: Colors.amber),
-                              //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                            ),
-                            const TextSpan(text: " and "),
-                            const TextSpan(
-                              text: "46",
-                              style: TextStyle(color: Colors.amber),
-                              //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                            ),
-                            const TextSpan(text: ").")
-                          ], "alert"),
+                              const TextSpan(text: "The Ministry of Primary Industries (MPI) considers this to be an "),
+                              const TextSpan(text: "unwanted ", style: TextStyle(fontWeight: FontWeight.bold)),
+                              const TextSpan(text: "organism.")
+                              ], "warning")
+                          ),
+                          Visibility(
+                            visible: notifiableStatus == 0,
+                            child: createDetailsCard(
+                                <TextSpan>[
+                                  const TextSpan(text: "There are multiple variants of this species, some of which are "
+                                      "considered notifiable pests. Unfortunately, the classifier cannot distinguish between these variants."),
+                                  const TextSpan(text: "\n\n"),
+                                  const TextSpan(text: "A notifiable organism could seriously harm New Zealand's primary production or our "
+                                      "trade and market access. If you suspect this is a notifiable variant, consider following the steps "
+                                      "outlined by the "),
+                                  const TextSpan(
+                                    text: "Ministry of Primary Industries.",
+                                    style: TextStyle(color: Colors.amber),
+                                    //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                                  )
+                                ], "warning"),
+                          ),
+                          Visibility(
+                            visible: notifiableStatus == 1,
+                            child: createDetailsCard(
+                                <TextSpan>[
+                                  const TextSpan(text: "Warning! This appears to be a "),
+                                  const TextSpan(text: "notifiable organism!", style: TextStyle(fontWeight: FontWeight.bold)),
+                                  const TextSpan(text: "\n\n"),
+                                  const TextSpan(text: "Notifiable organisms could seriously harm New Zealand's primary production or our "
+                                      "trade and market access."),
+                                  const TextSpan(text: "\n\n"),
+                                  const TextSpan(text: "If the model's assessment seems reasonable, we strongly recommend reporting this "
+                                      "organism by following the steps outlined by the Ministry of Primary Industries (MPI) "),
+                                  const TextSpan(
+                                    text: "here.",
+                                    style: TextStyle(color: Colors.amber),
+                                    //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                                  ),
+                                  const TextSpan(text: "\n\n"),
+                                  const TextSpan(text: "Please note that if you spot a notifiable organism, you have a legal obligation to "
+                                      "report it under the "),
+                                  const TextSpan(
+                                    text: "Biosecurity Act 1993",
+                                    style: TextStyle(color: Colors.amber),
+                                    //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                                  ),
+                                  const TextSpan(text: " ("),
+                                  const TextSpan(
+                                    text: "Section 44",
+                                    style: TextStyle(color: Colors.amber),
+                                    //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                                  ),
+                                  const TextSpan(text: " and "),
+                                  const TextSpan(
+                                    text: "46",
+                                    style: TextStyle(color: Colors.amber),
+                                    //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                                  ),
+                                  const TextSpan(text: ").")
+                                ], "alert"),
+                          ),
                           const SizedBox(height: 12),
                           const Text(
                             "Top Five Predictions:",
