@@ -25,6 +25,9 @@ class _Classification extends State<Classification>{
   late final String speciesName;
   late final List<String> engNames;
   late final List<String> mriNames;
+  late final bool isPlantOriented;  // whether or not the prediction seems likely to revolve around plants
+  late final bool isUnwanted;
+  late final int notifiableStatus; // -1 for not notifiable, 0 for both, 1 for notifiable
 
   String probability2String(double probability){
     if (probability <= 0.001) {
@@ -185,10 +188,39 @@ class _Classification extends State<Classification>{
     );
   }
 
-  Future loadNamesData() async {
+  Future loadSpeciesData() async {
     stringID = classificationResult.topFivePredictions[0].index.toString();
-    engNames = List<String>.from(speciesNamesMap[classificationResult.topFivePredictions[0].index.toString()]["eng"]);
-    mriNames = List<String>.from(speciesNamesMap[classificationResult.topFivePredictions[0].index.toString()]["mri"]);
+    engNames = List<String>.from(speciesNamesMap[stringID]["eng"]);
+    mriNames = List<String>.from(speciesNamesMap[stringID]["mri"]);
+    // set plant status
+    List<String> topFiveIndices = [
+      classificationResult.topFivePredictions[0].index.toString(),
+      classificationResult.topFivePredictions[1].index.toString(),
+      classificationResult.topFivePredictions[2].index.toString(),
+      classificationResult.topFivePredictions[3].index.toString(),
+      classificationResult.topFivePredictions[4].index.toString(),
+    ];
+    int plantCount = 0;
+    int nonEmptyCount = 0;
+    for (int i = 0; i<5; i++){
+      nonEmptyCount += speciesNamesMap[topFiveIndices[i]]["kingdom"] == "" ? 0 : 1;  // if the kingdom string is empty, add nothing to the count, else 1
+      plantCount += speciesNamesMap[topFiveIndices[i]]["kingdom"] == "Plantae" ? 1 : 0;
+    }
+    if (plantCount > nonEmptyCount ~/2 || speciesNamesMap[stringID]["kingdom"] == "Plantae"){  // if most top 5 species are plants or the top prediction is a plant, the prediction is plant oriented
+      isPlantOriented = true;  // needs to be redone
+    }
+    // set unwanted status
+    if (speciesNamesMap[stringID]["unwanted"] == "Yes") {
+      isUnwanted = true;
+    }
+    // set notifiable status
+    if (speciesNamesMap[stringID]["notifiable"] == "Yes"){
+      notifiableStatus = 1;
+    } else if (speciesNamesMap[stringID]["notifiable"] == "No,Yes"){
+      notifiableStatus = 0;
+    } else {
+      notifiableStatus = -1;
+    }
   }
 
   @override
@@ -197,7 +229,7 @@ class _Classification extends State<Classification>{
     box = Hive.box('resultsBox');
     debugPrint("${widget.classificationID}");
     classificationResult = box.getAt(widget.classificationID);  // for demo purposes, select first(?) entry for now.
-    loadNamesData();
+    loadSpeciesData();
   }
 
   @override
@@ -258,12 +290,15 @@ class _Classification extends State<Classification>{
                               classificationResult.topFivePredictions[0].probability*/
                           ),
                           const SizedBox(height: 12),
-                          createDetailsCard(<TextSpan>[
+
+                          createDetailsCard(
+                              <TextSpan>[
                             const TextSpan(text: "The Ministry of Primary Industries (MPI) considers this to be an "),
                             const TextSpan(text: "unwanted ", style: TextStyle(fontWeight: FontWeight.bold)),
                             const TextSpan(text: "organism.")
                           ], "warning"),
-                          createDetailsCard(<TextSpan>[
+                          createDetailsCard(
+                              <TextSpan>[
                             const TextSpan(text: "There are multiple variants of this species, some of which are "
                                 "considered notifiable pests. Unfortunately, the classifier cannot distinguish between these variants."),
                             const TextSpan(text: "\n\n"),
@@ -276,7 +311,8 @@ class _Classification extends State<Classification>{
                               //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
                             )
                           ], "warning"),
-                          createDetailsCard(<TextSpan>[
+                          createDetailsCard(
+                              <TextSpan>[
                             const TextSpan(text: "Warning! This appears to be a "),
                             const TextSpan(text: "notifiable organism!", style: TextStyle(fontWeight: FontWeight.bold)),
                             const TextSpan(text: "\n\n"),
