@@ -173,6 +173,28 @@ class _Classification extends State<Classification>{
         break;
     }
 
+    if (detailType == "helper"){
+      return Card(
+        elevation: 0,
+        color: tileColor,
+        child: Container(
+            padding: const EdgeInsets.all(8),
+            child: RichText(
+              text: TextSpan(
+                  children: details,
+                  style: TextStyle(color: textColor)
+              ),
+            )
+        ),
+        shape: const RoundedRectangleBorder(
+          side: BorderSide(
+            color: Colors.teal,
+          ),
+          borderRadius: BorderRadius.all(Radius.circular(12))
+        ),
+      );
+    }
+
     return Card(
         elevation: 2,
         color: tileColor,
