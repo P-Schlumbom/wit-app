@@ -66,6 +66,13 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.teal,
         scaffoldBackgroundColor: Color(0xFFeff6e0),
+        /*textTheme: TextTheme(
+          bodyLarge: TextStyle(color: Colors.indigo.shade900),
+          bodyMedium: TextStyle(color: Colors.indigo.shade900),
+          bodySmall: TextStyle(color: Colors.indigo.shade900),
+          //bodyText1: TextStyle(color: Colors.indigo.shade900),
+          //bodyText2: TextStyle(color: Colors.indigo.shade900),
+        )*/
       ),
       home: const MyHomePage(title: 'What Is This?'),
       debugShowCheckedModeBanner: false,

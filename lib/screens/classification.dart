@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 
 import 'package:wit_app/classes/classification_result.dart';
+import 'package:wit_app/utils/custom_expansion_tile.dart';
 
 import 'package:wit_app/globals.dart';
 
@@ -207,6 +208,20 @@ class _Classification extends State<Classification>{
             ),
           )
         ),
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12))
+        )
+    );
+  }
+
+
+  ListTile createTopFiveListTile(int index){
+    String numberString = "${index + 1}. ";
+    return ListTile(
+      leading: Text(numberString),
+      title: SelectableText(classificationResult.topFivePredictions[index].species),
+      trailing: Text((classificationResult.topFivePredictions[index].probability).toStringAsPrecision(3)),
+      textColor: const Color(0xFFeff6e0),
     );
   }
 
@@ -386,19 +401,15 @@ class _Classification extends State<Classification>{
                                 ], "alert"),
                           ),
                           const SizedBox(height: 12),
-                          const Text(
-                            "Top Five Predictions:",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            "1. ${classificationResult.topFivePredictions[0].species}, ${(classificationResult.topFivePredictions[0].probability).toStringAsPrecision(3)}\n"
-                                "2. ${classificationResult.topFivePredictions[1].species}, ${(classificationResult.topFivePredictions[1].probability).toStringAsPrecision(3)}\n"
-                                "3. ${classificationResult.topFivePredictions[2].species}, ${(classificationResult.topFivePredictions[2].probability).toStringAsPrecision(3)}\n"
-                                "4. ${classificationResult.topFivePredictions[3].species}, ${(classificationResult.topFivePredictions[3].probability).toStringAsPrecision(3)}\n"
-                                "5. ${classificationResult.topFivePredictions[4].species}, ${(classificationResult.topFivePredictions[4].probability).toStringAsPrecision(3)}\n"
+                          CustomExpansionTile(
+                            title: const Text("Top Five Predictions", style: TextStyle(fontWeight: FontWeight.bold)),
+                            children: [
+                              createTopFiveListTile(0),
+                              createTopFiveListTile(1),
+                              createTopFiveListTile(2),
+                              createTopFiveListTile(3),
+                              createTopFiveListTile(4),
+                            ],
                           ),
                           const SizedBox(height: 12),
                           Text(
