@@ -11,6 +11,8 @@ import 'package:wit_app/utils/custom_expansion_tile.dart';
 
 import 'package:wit_app/globals.dart';
 
+const double PROB_THRESHOLD = 0.5;
+
 class Classification extends StatefulWidget {
   final int classificationID;
   const Classification({Key? key, required this.classificationID}) : super(key: key);
@@ -97,6 +99,19 @@ class _Classification extends State<Classification>{
   RichText createNameDetailsText(String prediction, List<String> engNames, List<String> mriNames, double probability) {
     String confidenceText = "I have ${probability2String(probability)} that this is a ";
 
+    // if probability is < threhsold, return an "I don't know" message instead.
+    if (probability < PROB_THRESHOLD){
+      return RichText(
+        text: TextSpan(
+          children: <TextSpan>[
+            const TextSpan(text: "I am not confident enough to say what this might be. "),
+            TextSpan(text: probability > 0.1 ? "My best guess would be ${(prediction)}, but I'm really not sure." : "")
+          ],
+          style: const TextStyle(color: Colors.black),
+        )
+      );
+    }
+
     if (engNames.isEmpty && mriNames.isEmpty || (engNames[0] == "" && mriNames[0] == "")){
       return RichText(
           text: TextSpan(
@@ -105,7 +120,7 @@ class _Classification extends State<Classification>{
               TextSpan(text: prediction, style: const TextStyle(fontWeight: FontWeight.bold)),
               const TextSpan(text: ". I don't know of any common names for this species.")
             ],
-            style: TextStyle(color: Colors.black),
+            style: const TextStyle(color: Colors.black),
           ),
       );
     }
@@ -221,7 +236,7 @@ class _Classification extends State<Classification>{
       leading: Text(numberString),
       title: SelectableText(classificationResult.topFivePredictions[index].species),
       trailing: Text((classificationResult.topFivePredictions[index].probability).toStringAsPrecision(3)),
-      textColor: const Color(0xFFeff6e0),
+      textColor: const Color(0xFFeff6e0).withOpacity(classificationResult.topFivePredictions[index].probability / 4 + 0.75),
     );
   }
 
@@ -277,7 +292,7 @@ class _Classification extends State<Classification>{
   Widget build(BuildContext context){
     return Scaffold(
         appBar: AppBar(
-          title: Text(classificationResult.topFivePredictions[0].species),
+          title: Text(classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? classificationResult.topFivePredictions[0].species : "Unknown"),
         ),
         body: Scrollbar(
             child: ListView(
@@ -296,7 +311,7 @@ class _Classification extends State<Classification>{
                           Container(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: SelectableText(
-                              classificationResult.prediction,
+                              classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? classificationResult.prediction : "Unkown",
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 32.0,

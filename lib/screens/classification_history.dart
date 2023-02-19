@@ -61,7 +61,7 @@ class _ClassificationHistory extends State<ClassificationHistory> {
                 height: 64,
                 fit: BoxFit.cover),
           ),
-          title: Text(result.prediction),
+          title: Text("${(result.topFivePredictions[0].probability >= 0.5 ? result.prediction : "Unknown")} (${((result.topFivePredictions[0].probability).toStringAsPrecision(3))})"),
           subtitle: Text(DateFormat('yyyy-MM-dd - kk:mm').format(result.timestamp)),
           onTap: () {
             Navigator.push(
