@@ -25,8 +25,8 @@ class _ModelManager extends State<ModelManager> {
             children: const [
                ListTile(
                 leading: Icon(Icons.lightbulb_outline),
-                title: Text("Model Name"),
-                subtitle: Text("model size, and possibly estimated inference times"),
+                title: Text("EfficientNetV2_small"),
+                subtitle: Text("137.1 MB : 00:00s"),
               ),
             ],
           )
