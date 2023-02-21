@@ -298,7 +298,9 @@ class _Classification extends State<Classification>{
             child: ListView(
               children: [
                 FittedBox(
-                  child: Image.file(File(classificationResult.imagePath)),
+                  child:  File(classificationResult.imagePath).existsSync() ?
+                  Image.file(File(classificationResult.imagePath)) :
+                  const Icon(Icons.image_not_supported_outlined),
                   fit: BoxFit.fill,
                 ),
                 Container(
