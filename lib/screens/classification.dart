@@ -302,7 +302,7 @@ class _Classification extends State<Classification>{
     final String dirPath = dir.path;
 
     File standardFile = File(imagePath);
-    if (await standardFile.exists()) {
+    /*if (await standardFile.exists()) {
       return Image.file(standardFile);
     } else {
       File legacyFile = File('$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
@@ -311,8 +311,27 @@ class _Classification extends State<Classification>{
       } else {
         return null;
       }
+    }*/
+
+    if (await standardFile.exists()) {
+      return Image.file(standardFile);
     }
-  }
+    File legacyFile = File('$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
+    if (await legacyFile.exists()) {
+      return Image.file(legacyFile);
+    }
+    if (Platform.isIOS) {
+      final cacheDirectory = await getTemporaryDirectory();
+      final cachePath = cacheDirectory.path;
+      File iosFile = File(cachePath + Platform.pathSeparator + path.basename(imagePath));
+      if (await iosFile.exists()) {
+        return Image.file(iosFile);
+      } else {
+        return null;
+      }
+    }
+    return null;
+    }
 
   @override
   void initState() {
