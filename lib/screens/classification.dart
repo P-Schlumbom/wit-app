@@ -256,6 +256,7 @@ class _Classification extends State<Classification>{
     stringID = classificationResult.topFivePredictions[0].index.toString();
     engNames = List<String>.from(speciesNamesMap[stringID]["eng"]);
     mriNames = List<String>.from(speciesNamesMap[stringID]["mri"]);
+    bool acceptPred = classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD;  // no need to display notifications if confidence is too low
     // set plant status
     List<String> topFiveIndices = [
       classificationResult.topFivePredictions[0].index.toString(),
@@ -276,19 +277,47 @@ class _Classification extends State<Classification>{
       isPlantOriented = false;
     }
     // set notifiable status
-    if (speciesNamesMap[stringID]["notifiable"] == "Yes"){
+    if (speciesNamesMap[stringID]["notifiable"] == "Yes" && acceptPred){
       notifiableStatus = 1;
-    } else if (speciesNamesMap[stringID]["notifiable"] == "No,Yes"){
+    } else if (speciesNamesMap[stringID]["notifiable"] == "No,Yes" && acceptPred){
       notifiableStatus = 0;
     } else {
       notifiableStatus = -1;
     }
     // set unwanted status
-    if (speciesNamesMap[stringID]["unwanted"] == "Yes" && notifiableStatus == -1) {
+    if (speciesNamesMap[stringID]["unwanted"] == "Yes" && notifiableStatus == -1 && acceptPred) {
       isUnwanted = true;
     } else {
       isUnwanted = false;
     }
+  }
+
+  Future<Text> _getSearchPath(String imagePath) async {
+    /*
+    * For debugging purposes, get the paths images are being searched for...
+    * */
+    Directory dir = await getApplicationDocumentsDirectory();
+    final String dirPath = dir.path;
+
+    File standardFile = File(imagePath);
+    if (await standardFile.exists()) {
+      return Text(imagePath);
+    }
+    File legacyFile = File('$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
+    if (await legacyFile.exists()) {
+      return Text('$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
+    }
+    if (Platform.isIOS) {
+      final cacheDirectory = await getTemporaryDirectory();
+      final cachePath = cacheDirectory.path;
+      File iosFile = File(cachePath + Platform.pathSeparator + path.basename(imagePath));
+      if (await iosFile.exists()) {
+        return Text(cachePath + Platform.pathSeparator + path.basename(imagePath));
+      } else {
+        return Text("Looked for " + cachePath + Platform.pathSeparator + path.basename(imagePath) + " but found nothing");
+      }
+    }
+    return Text("Nothing at " + imagePath + "\nor at " + '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
   }
 
   Future<Image?> _getImage(String imagePath) async {
@@ -487,6 +516,16 @@ class _Classification extends State<Classification>{
                               createTopFiveListTile(3),
                               createTopFiveListTile(4),
                             ],
+                          ),const SizedBox(height: 12),
+                          FutureBuilder<Text>(  // wait for image to be found/loaded and display icon in the meantime
+                            future: _getSearchPath(classificationResult.imagePath),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData) {
+                                return snapshot.data ?? const Text("error retrieving data.");
+                              } else {
+                                return const Text("retrieving search paths...");
+                              }
+                            },
                           ),
                           const SizedBox(height: 12),
                           Text(
