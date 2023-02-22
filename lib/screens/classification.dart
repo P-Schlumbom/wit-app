@@ -130,10 +130,19 @@ class _Classification extends State<Classification>{
 
     String topEngName = engNames.isEmpty ? "" : engNames[0];
     String topMriName = mriNames.isEmpty ? "" : mriNames[0];
+    /*IF neither the top eng nor top mri names are empty,
+    * THEN
+    *   IF top eng == top mri
+    *   THEN use top eng
+    *   ELSE say "top eng, or top mri"
+    * ELSE
+    *   IF top eng isn't empty
+    *   THEN use top eng
+    *   ELSE use top mri*/
     String topName = (topEngName != "" && topMriName != "") ?
       ((topEngName == topMriName) ?
         topEngName :
-        "${topEngName}, or ${topMriName}") :
+        "$topMriName, or $topEngName") :
       ((topEngName != "") ?
         topEngName :
         topMriName);
@@ -363,11 +372,17 @@ class _Classification extends State<Classification>{
                           ),
                           Visibility(
                             visible: isPlantOriented,
-                              child: createDetailsCard(<TextSpan>[
-                            const TextSpan(text: "Are you trying to classify plants?\t"),
-                            const TextSpan(text: "We recommend taking close-up photographs of individual leaves, rather than "
-                            "images of the whole plant - the model tends to perform better that way.")
-                            ], "helper")
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 12),
+                                  createDetailsCard(<TextSpan>[
+                                    const TextSpan(text: "Are you trying to classify plants?\t"),
+                                    const TextSpan(text: "We recommend taking close-up photographs of individual leaves, rather than "
+                                        "images of the whole plant - the model tends to perform better that way.")
+                                  ], "helper")
+                                ],
+                              )
                           ),
                           const SizedBox(height: 12),
                           createNameDetailsText(
