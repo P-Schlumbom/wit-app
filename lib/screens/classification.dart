@@ -309,13 +309,24 @@ class _Classification extends State<Classification>{
     }
     if (Platform.isIOS) {
       final cacheDirectory = await getTemporaryDirectory();
-      final cachePath = cacheDirectory.path;
-      File iosFile = File(cachePath + Platform.pathSeparator + path.basename(imagePath));
-      if (await iosFile.exists()) {
+      final cachePath = cacheDirectory.path; // /var/mobile/Containers/Data/Application/{build hash}/Library/Caches
+      String tmpPath = path.dirname(cachePath);  // /var/mobile/Containers/Data/Application/{build hash}/Library
+      tmpPath = path.dirname(cachePath);  // /var/mobile/Containers/Data/Application/{build hash}
+      File iosCacheFile = File(cachePath + Platform.pathSeparator + path.basename(imagePath));
+      if (await iosCacheFile.exists()) {
         return Text(cachePath + Platform.pathSeparator + path.basename(imagePath));
-      } else {
-        return Text("Looked for " + cachePath + Platform.pathSeparator + path.basename(imagePath) + " but found nothing");
       }
+      File iosTmpFile = File(tmpPath + Platform.pathSeparator + path.basename(imagePath));
+      if (await iosTmpFile.exists()){
+        return Text(tmpPath + Platform.pathSeparator + path.basename(imagePath));
+      }
+      File iosTmpFile2 = File("${Platform.pathSeparator}private${Platform.pathSeparator}$tmpPath${Platform.pathSeparator}${path.basename(imagePath)}");
+      if (await iosTmpFile2.exists()){
+        return Text("${Platform.pathSeparator}private${Platform.pathSeparator}$tmpPath${Platform.pathSeparator}${path.basename(imagePath)}");
+      }
+      return Text("Looked for " + cachePath + Platform.pathSeparator + path.basename(imagePath) + "\nand " +
+          tmpPath + Platform.pathSeparator + path.basename(imagePath) +
+          "\nand ${Platform.pathSeparator}private${Platform.pathSeparator}$tmpPath${Platform.pathSeparator}${path.basename(imagePath)}" + " but found nothing");
     }
     return Text("Nothing at " + imagePath + "\nor at " + '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
   }
@@ -329,6 +340,8 @@ class _Classification extends State<Classification>{
     * */
     Directory dir = await getApplicationDocumentsDirectory();
     final String dirPath = dir.path;
+
+    //debugPrint(dirPath + "\n\n" + path.dirname(dirPath) + "\n\n" + path.dirname(path.dirname(dirPath)));
 
     File standardFile = File(imagePath);
     /*if (await standardFile.exists()) {
@@ -352,12 +365,21 @@ class _Classification extends State<Classification>{
     if (Platform.isIOS) {
       final cacheDirectory = await getTemporaryDirectory();
       final cachePath = cacheDirectory.path;
-      File iosFile = File(cachePath + Platform.pathSeparator + path.basename(imagePath));
-      if (await iosFile.exists()) {
-        return Image.file(iosFile);
-      } else {
-        return null;
+      String tmpPath = path.dirname(cachePath);  // /var/mobile/Containers/Data/Application/{build hash}/Library
+      tmpPath = path.dirname(cachePath);  // /var/mobile/Containers/Data/Application/{build hash}
+      File iosCacheFile = File(cachePath + Platform.pathSeparator + path.basename(imagePath));
+      if (await iosCacheFile.exists()) {
+        return Image.file(iosCacheFile);
       }
+      File iosTmpFile = File(tmpPath + Platform.pathSeparator + path.basename(imagePath));
+      if (await iosTmpFile.exists()){
+        return Image.file(iosTmpFile);
+      }
+      File iosTmpFile2 = File("${Platform.pathSeparator}private${Platform.pathSeparator}$tmpPath${Platform.pathSeparator}${path.basename(imagePath)}");
+      if (await iosTmpFile2.exists()){
+        return Image.file(iosTmpFile2);
+      }
+      return null;
     }
     return null;
     }
