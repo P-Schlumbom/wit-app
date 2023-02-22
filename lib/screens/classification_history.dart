@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 
 import 'package:wit_app/classes/classification_result.dart';
 
@@ -47,6 +48,39 @@ class _ClassificationHistory extends State<ClassificationHistory> {
     });
   }
 
+  Future<Image?> _getImage(String imagePath) async {
+    /*
+    * In new versions (1.1.0+), images are stored in {dir}/files/
+    * However, in previous versions, this wasn't always the case, so try to
+    * retrieve images using their file name only, and return a missing image
+    * icon otherwise.
+    * */
+    Directory dir = await getApplicationDocumentsDirectory();
+    final String dirPath = dir.path;
+
+    File standardFile = File(imagePath);
+    if (await standardFile.exists()) {
+      return Image.file(
+        standardFile,
+        width: 64,
+        height: 64,
+        fit: BoxFit.cover,
+      );
+    } else {
+      File legacyFile = File('$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
+      if (await legacyFile.exists()) {
+        return Image.file(
+          legacyFile,
+          width: 64,
+          height: 64,
+          fit: BoxFit.cover,
+        );
+      } else {
+        return null;
+      }
+    }
+  }
+
   List<Container> _buildClassificationResults(){
     // note that this may possibly be a slightly questionable method currently
     int index = 0;
@@ -56,10 +90,30 @@ class _ClassificationHistory extends State<ClassificationHistory> {
       var container = Container(
         child: ListTile(
           leading: ClipOval(
-            child: Image.file(File(result.imagePath),
+            /*child: FutureBuilder<Image?>(
+                    future: _getImage(classificationResult.imagePath),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return snapshot.data ?? const Icon(Icons.image_not_supported_outlined);
+                      } else {
+                        return const Icon(Icons.image_not_supported_outlined);
+                      }
+                    },
+                  ),*/
+            /*child: Image.file(File(result.imagePath),
                 width: 64,
                 height: 64,
-                fit: BoxFit.cover),
+                fit: BoxFit.cover),*/
+            child: FutureBuilder<Image?>(
+              future: _getImage(result.imagePath),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return snapshot.data ?? const Icon(Icons.image_not_supported_outlined);
+                } else {
+                  return const Icon(Icons.image_not_supported_outlined);
+                }
+              },
+            ),
           ),
           title: Text("${(result.topFivePredictions[0].probability >= 0.5 ? result.prediction : "Unknown")} (${((result.topFivePredictions[0].probability).toStringAsPrecision(3))})"),
           subtitle: Text(DateFormat('yyyy-MM-dd - kk:mm').format(result.timestamp)),
