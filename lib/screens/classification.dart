@@ -490,6 +490,13 @@ class _Classification extends State<Classification>{
                           ),
                           const SizedBox(height: 12),
                           Text(
+                            classificationResult.imagePath,
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
                             "This image was taken on ${DateFormat('yyyy-MM-dd - kk:mm').format(classificationResult.timestamp)}",
                             style: TextStyle(
                               color: Colors.grey[500],
