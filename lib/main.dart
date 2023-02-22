@@ -104,7 +104,7 @@ class _MyHomePageState extends State<MyHomePage> {
     "species_model_squeezenet": 224
   };
 
-  File? image;// = File("assets/logos/TAIAO.png");
+  //File? image;// = File("assets/logos/TAIAO.png");
   Model? imageModel;
   //PostProcessingModel? imageModel;
   String? imagePrediction;
@@ -210,27 +210,15 @@ class _MyHomePageState extends State<MyHomePage> {
       //final String dirPath = dir.path;
       final String dirPath = dir.path + "${Platform.pathSeparator}files";
       final Directory targetDir = Directory(dirPath);
-
-      final String filename = path.basename(predImage.path);
-      //final String basePath = "files${Platform.pathSeparator}${DateFormat('yyyyMMddkkmmss').format(DateTime.now())}.png";
-      final String basePath = "${DateFormat('yyyyMMddkkmmss').format(DateTime.now())}.png";
-      // IF image is not picked from gallery,
-      // copy image to the new path
-      /*if (source != ImageSource.gallery){
-        String savePath = '$dirPath${Platform.pathSeparator}' + basePath;
-        //debugPrint(savePath);
-        //final XFile storedImage = await predImage.copy(newPath);
-        predImage.saveTo(savePath);
-      }*/
+      final String filename = "${DateFormat('yyyyMMddkkmmss').format(DateTime.now())}.png";
       // alternatively to checking if image was picked from gallery above, save a copy of the image always
-      String savePath = '$dirPath${Platform.pathSeparator}' + basePath;
+      String savePath = '$dirPath${Platform.pathSeparator}' + filename;
 
       if (!await targetDir.exists()) {
         await targetDir.create(recursive: true);
       }
 
       await predImage.saveTo(savePath);
-      //predImage = XFile(predImage.path).copy(savePath);
 
       setState(() {
         _isLoading = true;
@@ -247,12 +235,9 @@ class _MyHomePageState extends State<MyHomePage> {
       );
       prediction = applySoftmax(prediction);
       List<Prediction> topFivePredictions = await _getTopFivePredictions(prediction, "assets/labels/species_names.csv");
-      //debugPrint(predImage.path);
-      //box.add(ClassificationResult(topFivePredictions[0].species, predImage.path, DateTime.now(), topFivePredictions));
-      debugPrint(savePath);
       box.add(ClassificationResult(topFivePredictions[0].species, savePath, DateTime.now(), topFivePredictions));
 
-      setState(() => this.image = File(predImage.path));  // unecessary?
+      //setState(() => this.image = File(predImage.path));  // unecessary?
       setState(() {
         _isLoading = false;
       });

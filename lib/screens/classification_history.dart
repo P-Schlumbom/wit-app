@@ -90,20 +90,6 @@ class _ClassificationHistory extends State<ClassificationHistory> {
       var container = Container(
         child: ListTile(
           leading: ClipOval(
-            /*child: FutureBuilder<Image?>(
-                    future: _getImage(classificationResult.imagePath),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        return snapshot.data ?? const Icon(Icons.image_not_supported_outlined);
-                      } else {
-                        return const Icon(Icons.image_not_supported_outlined);
-                      }
-                    },
-                  ),*/
-            /*child: Image.file(File(result.imagePath),
-                width: 64,
-                height: 64,
-                fit: BoxFit.cover),*/
             child: FutureBuilder<Image?>(
               future: _getImage(result.imagePath),
               builder: (context, snapshot) {

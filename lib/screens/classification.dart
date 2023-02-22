@@ -33,9 +33,7 @@ class _Classification extends State<Classification>{
   late final bool isPlantOriented;  // whether or not the prediction seems likely to revolve around plants
   late final bool isUnwanted;
   late final int notifiableStatus; // -1 for not notifiable, 0 for both, 1 for notifiable
-  //late final Future<String?> imagePath = _findImagePath(classificationResult.imagePath);
-  //late final String? imagePath;
-  Image? image;
+  //Image? image;
 
   String probability2String(double probability){
     if (probability <= 0.001) {
@@ -104,7 +102,7 @@ class _Classification extends State<Classification>{
   RichText createNameDetailsText(String prediction, List<String> engNames, List<String> mriNames, double probability) {
     String confidenceText = "I have ${probability2String(probability)} that this is a ";
 
-    // if probability is < threhsold, return an "I don't know" message instead.
+    // if probability is < threshold, return an "I don't know" message instead.
     if (probability < PROB_THRESHOLD){
       return RichText(
         text: TextSpan(
@@ -284,71 +282,6 @@ class _Classification extends State<Classification>{
     }
   }
 
-  Future<void> _setImage(String imPath) async {
-    Directory dir = await getApplicationDocumentsDirectory();
-    final String dirPath = dir.path;
-
-    File standardFile = File(imPath);
-    debugPrint("attempting to retrieve from: " + imPath + "\nand from: " + '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imPath));
-    if (await standardFile.exists()) {
-      debugPrint("attempting to retrieve from: " + imPath);
-      image = Image.file(File(imPath));
-      //imagePath = '$dirPath${Platform.pathSeparator}' + imPath;
-    } else {
-      File legacyFile = File('$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imPath));
-      if (await legacyFile.exists()) {
-        //imagePath = '$dirPath${Platform.pathSeparator}' + path.basename(imPath);
-        debugPrint("attempting to retrieve from: " + '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imPath));
-        image = Image.file(File('$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imPath)));
-      } else {
-        //imagePath = null;
-        debugPrint("paths not found");
-        image = null;
-        //image = const Icon(Icons.image_not_supported_outlined);
-      }
-    }
-  }
-
-  Future _setImagePath(String imPath) async {
-    Directory dir = await getApplicationDocumentsDirectory();
-    final String dirPath = dir.path;
-    String? imagePath;
-
-    File standardFile = File('$dirPath${Platform.pathSeparator}' + imPath);
-
-    if (await standardFile.exists()) {
-      imagePath = '$dirPath${Platform.pathSeparator}' + imPath;
-    } else {
-      File legacyFile = File('$dirPath${Platform.pathSeparator}' + path.basename(imPath));
-      if (await legacyFile.exists()) {
-        imagePath = '$dirPath${Platform.pathSeparator}' + path.basename(imPath);
-      } else {
-        imagePath = null;
-      }
-    }
-  }
-
-  Future<String?> _findImagePath(String imagePath) async {
-    Directory dir = await getApplicationDocumentsDirectory();
-    final String dirPath = dir.path;
-
-    File standardFile = File('$dirPath${Platform.pathSeparator}' + imagePath);
-    File legacyFile = File('$dirPath${Platform.pathSeparator}' + path.basename(imagePath));
-
-    standardFile.exists().then((exists) {
-      if (exists) {
-        return '$dirPath${Platform.pathSeparator}' + imagePath;
-      }
-    });
-    legacyFile.exists().then((exists) {
-      if (exists) {
-        return '$dirPath${Platform.pathSeparator}' + path.basename(imagePath);
-      }
-    });
-
-    return null;
-  }
-
   Future<Image?> _getImage(String imagePath) async {
     /*
     * In new versions (1.1.0+), images are stored in {dir}/files/
@@ -356,43 +289,17 @@ class _Classification extends State<Classification>{
     * retrieve images using their file name only, and return a missing image
     * icon otherwise.
     * */
-    /*Directory dir = await getApplicationDocumentsDirectory();
-    final String dirPath = dir.path;
-
-    File standardFile = File('$dirPath${Platform.pathSeparator}' + imagePath);
-    File legacyFile = File('$dirPath${Platform.pathSeparator}' + path.basename(imagePath));
-
-    standardFile.exists().then((exists) {
-      if (exists) {
-        return Image.file(File('$dirPath${Platform.pathSeparator}' + imagePath));
-      }
-    });
-    legacyFile.exists().then((exists) {
-      if (exists) {
-        return Image.file(File('$dirPath${Platform.pathSeparator}' + path.basename(imagePath)));
-      }
-    });
-
-    return const Icon(Icons.image_not_supported_outlined);*/
     Directory dir = await getApplicationDocumentsDirectory();
     final String dirPath = dir.path;
 
     File standardFile = File(imagePath);
-    debugPrint("attempting to retrieve from: " + imagePath + "\nand from: " + '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
     if (await standardFile.exists()) {
-      debugPrint("attempting to retrieve from: " + imagePath);
       return Image.file(standardFile);
-      //imagePath = '$dirPath${Platform.pathSeparator}' + imPath;
     } else {
       File legacyFile = File('$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
       if (await legacyFile.exists()) {
-        //imagePath = '$dirPath${Platform.pathSeparator}' + path.basename(imPath);
-        debugPrint("attempting to retrieve from: " + '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
         return Image.file(legacyFile);
       } else {
-        //imagePath = null;
-        debugPrint("paths not found");
-        //image = null;
         return null;
       }
     }
@@ -405,175 +312,10 @@ class _Classification extends State<Classification>{
     debugPrint("${widget.classificationID}");
     classificationResult = box.getAt(widget.classificationID);  // for demo purposes, select first(?) entry for now.
     loadSpeciesData();
-    //_setImage(classificationResult.imagePath);
-    //_setImagePath(classificationResult.imagePath);
   }
 
   @override
   Widget build(BuildContext context){
-    //Future<String?> imagePath = _findImagePath(classificationResult.imagePath);
-    /*return FutureBuilder<Widget>(
-      future: _getImage(classificationResult.imagePath),
-      builder: (BuildContext context, AsyncSnapshot<Widget> snapshot) {
-        if (snapshot.hasData) {
-          return Scaffold(
-              appBar: AppBar(
-                title: Text(classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? classificationResult.topFivePredictions[0].species : "Unknown"),
-              ),
-              body: Scrollbar(
-                  child: ListView(
-                    children: [
-                      FittedBox(
-                        //child:  imagePath != null ? Image.file(File(imagePath!)) : const Icon(Icons.image_not_supported_outlined),
-                        child: snapshot.data!,
-                        fit: BoxFit.fill,
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(32),
-                        child: Row(
-                          children: [
-                            Expanded(child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: SelectableText(
-                                    classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? classificationResult.prediction : "Unkown",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 32.0,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  "Prediction probability: ${(classificationResult.topFivePredictions[0].probability).toStringAsPrecision(3)}",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16.0,
-                                  ),
-                                ),
-                                Visibility(
-                                    visible: isPlantOriented,
-                                    child: createDetailsCard(<TextSpan>[
-                                      const TextSpan(text: "Are you trying to classify plants?\t"),
-                                      const TextSpan(text: "We recommend taking close-up photographs of individual leaves, rather than "
-                                          "images of the whole plant - the model tends to perform better that way.")
-                                    ], "helper")
-                                ),
-                                const SizedBox(height: 12),
-                                /*Text(
-                            //"Also known as: ${createNamesList(classificationResult.topFivePredictions[0].nameData.engNames, classificationResult.topFivePredictions[0].nameData.mriNames)}",
-                            createNameDetailsText(classificationResult.topFivePredictions[0].nameData.engNames, classificationResult.topFivePredictions[0].nameData.mriNames),
-                          ),*/
-                                createNameDetailsText(
-                                    classificationResult.prediction,
-                                    engNames,
-                                    mriNames,
-                                    classificationResult.topFivePredictions[0].probability
-                                  /*speciesNamesMap[classificationResult.topFivePredictions[0].index.toString()]["eng"],
-                              speciesNamesMap[classificationResult.topFivePredictions[0].index.toString()]["mri"],
-                              classificationResult.topFivePredictions[0].probability*/
-                                ),
-                                const SizedBox(height: 12),
-                                Visibility(
-                                    visible: isUnwanted,
-                                    child: createDetailsCard(
-                                        <TextSpan>[
-                                          const TextSpan(text: "The Ministry of Primary Industries (MPI) considers this to be an "),
-                                          const TextSpan(text: "unwanted ", style: TextStyle(fontWeight: FontWeight.bold)),
-                                          const TextSpan(text: "organism.")
-                                        ], "warning")
-                                ),
-                                Visibility(
-                                  visible: notifiableStatus == 0,
-                                  child: createDetailsCard(
-                                      <TextSpan>[
-                                        const TextSpan(text: "There are multiple variants of this species, some of which are "
-                                            "considered notifiable pests. Unfortunately, the classifier cannot distinguish between these variants."),
-                                        const TextSpan(text: "\n\n"),
-                                        const TextSpan(text: "A notifiable organism could seriously harm New Zealand's primary production or our "
-                                            "trade and market access. If you suspect this is a notifiable variant, consider following the steps "
-                                            "outlined by the "),
-                                        const TextSpan(
-                                          text: "Ministry of Primary Industries.",
-                                          style: TextStyle(color: Colors.amber),
-                                          //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                                        )
-                                      ], "warning"),
-                                ),
-                                Visibility(
-                                  visible: notifiableStatus == 1,
-                                  child: createDetailsCard(
-                                      <TextSpan>[
-                                        const TextSpan(text: "Warning! This appears to be a "),
-                                        const TextSpan(text: "notifiable organism!", style: TextStyle(fontWeight: FontWeight.bold)),
-                                        const TextSpan(text: "\n\n"),
-                                        const TextSpan(text: "Notifiable organisms could seriously harm New Zealand's primary production or our "
-                                            "trade and market access."),
-                                        const TextSpan(text: "\n\n"),
-                                        const TextSpan(text: "If the model's assessment seems reasonable, we strongly recommend reporting this "
-                                            "organism by following the steps outlined by the Ministry of Primary Industries (MPI) "),
-                                        const TextSpan(
-                                          text: "here.",
-                                          style: TextStyle(color: Colors.amber),
-                                          //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                                        ),
-                                        const TextSpan(text: "\n\n"),
-                                        const TextSpan(text: "Please note that if you spot a notifiable organism, you have a legal obligation to "
-                                            "report it under the "),
-                                        const TextSpan(
-                                          text: "Biosecurity Act 1993",
-                                          style: TextStyle(color: Colors.amber),
-                                          //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                                        ),
-                                        const TextSpan(text: " ("),
-                                        const TextSpan(
-                                          text: "Section 44",
-                                          style: TextStyle(color: Colors.amber),
-                                          //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                                        ),
-                                        const TextSpan(text: " and "),
-                                        const TextSpan(
-                                          text: "46",
-                                          style: TextStyle(color: Colors.amber),
-                                          //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                                        ),
-                                        const TextSpan(text: ").")
-                                      ], "alert"),
-                                ),
-                                const SizedBox(height: 12),
-                                CustomExpansionTile(
-                                  title: const Text("Top Five Predictions", style: TextStyle(fontWeight: FontWeight.bold)),
-                                  children: [
-                                    createTopFiveListTile(0),
-                                    createTopFiveListTile(1),
-                                    createTopFiveListTile(2),
-                                    createTopFiveListTile(3),
-                                    createTopFiveListTile(4),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  "This image was taken on ${DateFormat('yyyy-MM-dd - kk:mm').format(classificationResult.timestamp)}",
-                                  style: TextStyle(
-                                    color: Colors.grey[500],
-                                  ),
-                                )
-                              ],
-                            ))
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-              )
-          );
-        } else {
-          return const CircularProgressIndicator();
-        }
-      },
-    );*/
     return Scaffold(
         appBar: AppBar(
           title: Text(classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? classificationResult.topFivePredictions[0].species : "Unknown"),
@@ -582,11 +324,7 @@ class _Classification extends State<Classification>{
             child: ListView(
               children: [
                 FittedBox(
-                  /*child:  File(classificationResult.imagePath).existsSync() ?
-                  Image.file(File(classificationResult.imagePath)) :
-                  const Icon(Icons.image_not_supported_outlined),*/
-                  //child: image ?? const Icon(Icons.image_not_supported_outlined),
-                  child: FutureBuilder<Image?>(
+                  child: FutureBuilder<Image?>(  // wait for image to be found/loaded and display icon in the meantime
                     future: _getImage(classificationResult.imagePath),
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
@@ -632,18 +370,11 @@ class _Classification extends State<Classification>{
                             ], "helper")
                           ),
                           const SizedBox(height: 12),
-                          /*Text(
-                            //"Also known as: ${createNamesList(classificationResult.topFivePredictions[0].nameData.engNames, classificationResult.topFivePredictions[0].nameData.mriNames)}",
-                            createNameDetailsText(classificationResult.topFivePredictions[0].nameData.engNames, classificationResult.topFivePredictions[0].nameData.mriNames),
-                          ),*/
                           createNameDetailsText(
                               classificationResult.prediction,
                               engNames,
                               mriNames,
                               classificationResult.topFivePredictions[0].probability
-                              /*speciesNamesMap[classificationResult.topFivePredictions[0].index.toString()]["eng"],
-                              speciesNamesMap[classificationResult.topFivePredictions[0].index.toString()]["mri"],
-                              classificationResult.topFivePredictions[0].probability*/
                           ),
                           const SizedBox(height: 12),
                           Visibility(
