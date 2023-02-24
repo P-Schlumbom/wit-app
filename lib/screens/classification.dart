@@ -1,5 +1,6 @@
 //import 'dart:html';
 
+import 'package:camera/camera.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
@@ -331,6 +332,12 @@ class _Classification extends State<Classification>{
     return Text("Nothing at " + imagePath + "\nor at " + '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
   }
 
+  Future<void> _resaveImage(String srcPath, String tgtPath) async {
+    XFile image = XFile(srcPath);
+    await image.saveTo(tgtPath);
+    debugPrint("image copied from \n$srcPath \nto \n$tgtPath");
+  }
+
   Future<Image?> _getImage(String imagePath) async {
     /*
     * In new versions (1.1.0+), images are stored in {dir}/files/
@@ -340,27 +347,20 @@ class _Classification extends State<Classification>{
     * */
     Directory dir = await getApplicationDocumentsDirectory();
     final String dirPath = dir.path;
-
+    final String tgtPath = '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath);
     //debugPrint(dirPath + "\n\n" + path.dirname(dirPath) + "\n\n" + path.dirname(path.dirname(dirPath)));
 
-    File standardFile = File(imagePath);
-    /*if (await standardFile.exists()) {
-      return Image.file(standardFile);
-    } else {
-      File legacyFile = File('$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
-      if (await legacyFile.exists()) {
-        return Image.file(legacyFile);
-      } else {
-        return null;
-      }
-    }*/
-
+    File standardFile = File(tgtPath);
     if (await standardFile.exists()) {
-      return Image.file(standardFile);
+      debugPrint("Loaded image from $tgtPath");
+      return Image.file(standardFile,
+      opacity: const AlwaysStoppedAnimation(0.5),);
     }
-    File legacyFile = File('$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
-    if (await legacyFile.exists()) {
-      return Image.file(legacyFile);
+    File surfaceFile = File(imagePath);
+    if (await surfaceFile.exists()) {
+      debugPrint("loaded image from $imagePath");
+      await _resaveImage(imagePath, tgtPath);
+      return Image.file(surfaceFile);
     }
     if (Platform.isIOS) {
       final cacheDirectory = await getTemporaryDirectory();
@@ -369,14 +369,17 @@ class _Classification extends State<Classification>{
       tmpPath = path.dirname(tmpPath);  // /var/mobile/Containers/Data/Application/{build hash}
       File iosCacheFile = File(cachePath + Platform.pathSeparator + path.basename(imagePath));
       if (await iosCacheFile.exists()) {
+        await _resaveImage(cachePath + Platform.pathSeparator + path.basename(imagePath), tgtPath);
         return Image.file(iosCacheFile);
       }
       File iosTmpFile = File(tmpPath + Platform.pathSeparator + "tmp" + Platform.pathSeparator + path.basename(imagePath));
       if (await iosTmpFile.exists()){
+        await _resaveImage(tmpPath + Platform.pathSeparator + "tmp" + Platform.pathSeparator + path.basename(imagePath), tgtPath);
         return Image.file(iosTmpFile);
       }
       File iosTmpFile2 = File("${Platform.pathSeparator}private$tmpPath${Platform.pathSeparator}tmp${Platform.pathSeparator}${path.basename(imagePath)}");
       if (await iosTmpFile2.exists()){
+        await _resaveImage("${Platform.pathSeparator}private$tmpPath${Platform.pathSeparator}tmp${Platform.pathSeparator}${path.basename(imagePath)}", tgtPath);
         return Image.file(iosTmpFile2);
       }
       return null;
@@ -538,16 +541,6 @@ class _Classification extends State<Classification>{
                               createTopFiveListTile(3),
                               createTopFiveListTile(4),
                             ],
-                          ),const SizedBox(height: 12),
-                          FutureBuilder<Text>(  // wait for image to be found/loaded and display icon in the meantime
-                            future: _getSearchPath(classificationResult.imagePath),
-                            builder: (context, snapshot) {
-                              if (snapshot.hasData) {
-                                return snapshot.data ?? const Text("error retrieving data.");
-                              } else {
-                                return const Text("retrieving search paths...");
-                              }
-                            },
                           ),
                           const SizedBox(height: 12),
                           Text(

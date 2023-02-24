@@ -48,6 +48,12 @@ class _ClassificationHistory extends State<ClassificationHistory> {
     });
   }
 
+  Future<void> _resaveImage(String srcPath, String tgtPath) async {
+    XFile image = XFile(srcPath);
+    await image.saveTo(tgtPath);
+    debugPrint("image copied from \n$srcPath \nto \n$tgtPath");
+  }
+
   Future<Image?> _getImage(String imagePath) async {
     /*
     * In new versions (1.1.0+), images are stored in {dir}/files/
@@ -57,57 +63,66 @@ class _ClassificationHistory extends State<ClassificationHistory> {
     * */
     Directory dir = await getApplicationDocumentsDirectory();
     final String dirPath = dir.path;
+    final String tgtPath = '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath);
+    //debugPrint(dirPath + "\n\n" + path.dirname(dirPath) + "\n\n" + path.dirname(path.dirname(dirPath)));
 
-    File standardFile = File(imagePath);
-    /*if (await standardFile.exists()) {
-      return Image.file(
-        standardFile,
-        width: 64,
-        height: 64,
-        fit: BoxFit.cover,
-      );
-    } else {
-      File legacyFile = File('$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
-      if (await legacyFile.exists()) {
-        return Image.file(
-          legacyFile,
+    File standardFile = File(tgtPath);
+    if (await standardFile.exists()) {
+      debugPrint("Loaded image from $tgtPath");
+      return Image.file(standardFile,
           width: 64,
           height: 64,
-          fit: BoxFit.cover,
-        );
-      } else {
-        return null;
-      }
-    }*/
-    if (await standardFile.exists()) {
-      return Image.file(standardFile,
-        width: 64,
-        height: 64,
-        fit: BoxFit.cover,);
+          fit: BoxFit.cover);
     }
-    File legacyFile = File('$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
-    if (await legacyFile.exists()) {
-      return Image.file(legacyFile,
-        width: 64,
-        height: 64,
-        fit: BoxFit.cover,);
+    File surfaceFile = File(imagePath);
+    if (await surfaceFile.exists()) {
+      debugPrint("loaded image from $imagePath");
+      await _resaveImage(imagePath, tgtPath);
+      return Image.file(surfaceFile,
+          width: 64,
+          height: 64,
+          fit: BoxFit.cover);
     }
     if (Platform.isIOS) {
       final cacheDirectory = await getTemporaryDirectory();
       final cachePath = cacheDirectory.path;
-      File iosFile = File(cachePath + Platform.pathSeparator + path.basename(imagePath));
-      if (await iosFile.exists()) {
-        return Image.file(iosFile,
-          width: 64,
-          height: 64,
-          fit: BoxFit.cover,);
-      } else {
-        return null;
+      String tmpPath = path.dirname(cachePath);  // /var/mobile/Containers/Data/Application/{build hash}/Library
+      tmpPath = path.dirname(tmpPath);  // /var/mobile/Containers/Data/Application/{build hash}
+      File iosCacheFile = File(cachePath + Platform.pathSeparator + path.basename(imagePath));
+      if (await iosCacheFile.exists()) {
+        await _resaveImage(cachePath + Platform.pathSeparator + path.basename(imagePath), tgtPath);
+        return Image.file(iosCacheFile,
+            width: 64,
+            height: 64,
+            fit: BoxFit.cover);
       }
+      File iosTmpFile = File(tmpPath + Platform.pathSeparator + "tmp" + Platform.pathSeparator + path.basename(imagePath));
+      if (await iosTmpFile.exists()){
+        await _resaveImage(tmpPath + Platform.pathSeparator + "tmp" + Platform.pathSeparator + path.basename(imagePath), tgtPath);
+        return Image.file(iosTmpFile,
+            width: 64,
+            height: 64,
+            fit: BoxFit.cover);
+      }
+      File iosTmpFile2 = File("${Platform.pathSeparator}private$tmpPath${Platform.pathSeparator}tmp${Platform.pathSeparator}${path.basename(imagePath)}");
+      if (await iosTmpFile2.exists()){
+        await _resaveImage("${Platform.pathSeparator}private$tmpPath${Platform.pathSeparator}tmp${Platform.pathSeparator}${path.basename(imagePath)}", tgtPath);
+        return Image.file(iosTmpFile2,
+            width: 64,
+            height: 64,
+            fit: BoxFit.cover);
+      }
+      return null;
     }
     return null;
   }
 
+/*if (await iosTmpFile2.exists()){
+        return Image.file(iosTmpFile2,
+            width: 64,
+            height: 64,
+            fit: BoxFit.cover);
+      }*/
   List<Container> _buildClassificationResults(){
     // note that this may possibly be a slightly questionable method currently
     int index = 0;
