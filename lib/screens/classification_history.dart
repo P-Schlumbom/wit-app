@@ -30,11 +30,11 @@ class _ClassificationHistory extends State<ClassificationHistory> {
   Future<void> deleteEntry(int index) async {
     // given a specific result ID, delete the image referenced by it and delete
     // the entry from the Hive box
-    debugPrint(index.toString());
-    debugPrint((box.values.length).toString());
+    //debugPrint(index.toString());
+    //debugPrint((box.values.length).toString());
     ClassificationResult? item = box.getAt(index);
     String imagePath = item!.imagePath;
-    debugPrint(imagePath);
+    //debugPrint(imagePath);
     // delete image
     // must check if source image is stored locally or a reference to an on-device image
     if (imagePath.startsWith('$dir.Path${Platform.pathSeparator}files${Platform.pathSeparator}') == true) {
@@ -51,7 +51,7 @@ class _ClassificationHistory extends State<ClassificationHistory> {
   Future<void> _resaveImage(String srcPath, String tgtPath) async {
     XFile image = XFile(srcPath);
     await image.saveTo(tgtPath);
-    debugPrint("image copied from \n$srcPath \nto \n$tgtPath");
+    //debugPrint("image copied from \n$srcPath \nto \n$tgtPath");
   }
 
   Future<Image?> _getImage(String imagePath) async {
@@ -68,7 +68,7 @@ class _ClassificationHistory extends State<ClassificationHistory> {
 
     File standardFile = File(tgtPath);
     if (await standardFile.exists()) {
-      debugPrint("Loaded image from $tgtPath");
+      //debugPrint("Loaded image from $tgtPath");
       return Image.file(standardFile,
           width: 64,
           height: 64,
@@ -76,7 +76,7 @@ class _ClassificationHistory extends State<ClassificationHistory> {
     }
     File surfaceFile = File(imagePath);
     if (await surfaceFile.exists()) {
-      debugPrint("loaded image from $imagePath");
+      //debugPrint("loaded image from $imagePath");
       await _resaveImage(imagePath, tgtPath);
       return Image.file(surfaceFile,
           width: 64,
