@@ -135,7 +135,7 @@ class _Classification extends State<Classification>{
     * THEN
     *   IF top eng == top mri
     *   THEN use top eng
-    *   ELSE say "top eng, or top mri"
+    *   ELSE say "top mri, or top eng"
     * ELSE
     *   IF top eng isn't empty
     *   THEN use top eng
@@ -293,7 +293,7 @@ class _Classification extends State<Classification>{
     }
   }
 
-  Future<Text> _getSearchPath(String imagePath) async {
+  /*Future<Text> _getSearchPath(String imagePath) async {
     /*
     * For debugging purposes, get the paths images are being searched for...
     * */
@@ -330,12 +330,12 @@ class _Classification extends State<Classification>{
           "\nand ${Platform.pathSeparator}private$tmpPath${Platform.pathSeparator}tmp${Platform.pathSeparator}${path.basename(imagePath)}" + " but found nothing");
     }
     return Text("Nothing at " + imagePath + "\nor at " + '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath));
-  }
+  }*/
 
   Future<void> _resaveImage(String srcPath, String tgtPath) async {
     XFile image = XFile(srcPath);
     await image.saveTo(tgtPath);
-    debugPrint("image copied from \n$srcPath \nto \n$tgtPath");
+    //debugPrint("image copied from \n$srcPath \nto \n$tgtPath");
   }
 
   Future<Image?> _getImage(String imagePath) async {
@@ -352,13 +352,13 @@ class _Classification extends State<Classification>{
 
     File standardFile = File(tgtPath);
     if (await standardFile.exists()) {
-      debugPrint("Loaded image from $tgtPath");
-      return Image.file(standardFile,
-      opacity: const AlwaysStoppedAnimation(0.5),);
+      //debugPrint("Loaded image from $tgtPath");
+      return Image.file(standardFile);
+      //opacity: const AlwaysStoppedAnimation(0.5),);
     }
     File surfaceFile = File(imagePath);
     if (await surfaceFile.exists()) {
-      debugPrint("loaded image from $imagePath");
+      //debugPrint("loaded image from $imagePath");
       await _resaveImage(imagePath, tgtPath);
       return Image.file(surfaceFile);
     }
@@ -391,7 +391,7 @@ class _Classification extends State<Classification>{
   void initState() {
     super.initState();
     box = Hive.box('resultsBox');
-    debugPrint("${widget.classificationID}");
+    //debugPrint("${widget.classificationID}");
     classificationResult = box.getAt(widget.classificationID);  // for demo purposes, select first(?) entry for now.
     loadSpeciesData();
   }
@@ -542,13 +542,13 @@ class _Classification extends State<Classification>{
                               createTopFiveListTile(4),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          /*const SizedBox(height: 12),
                           Text(
                             classificationResult.imagePath,
                             style: TextStyle(
                               color: Colors.grey[500],
                             ),
-                          ),
+                          ),*/
                           const SizedBox(height: 12),
                           Text(
                             "This image was taken on ${DateFormat('yyyy-MM-dd - kk:mm').format(classificationResult.timestamp)}",
