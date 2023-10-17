@@ -8,6 +8,8 @@ import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:wit_app/classes/classification_result.dart';
 import 'package:wit_app/utils/custom_expansion_tile.dart';
@@ -34,6 +36,9 @@ class _Classification extends State<Classification>{
   late final bool isPlantOriented;  // whether or not the prediction seems likely to revolve around plants
   late final bool isUnwanted;
   late final int notifiableStatus; // -1 for not notifiable, 0 for both, 1 for notifiable
+  late final String wikipediaSummary;
+  late final String wikipediaLink;
+  late final bool deprecatedEntry;
   //Image? image;
 
   String probability2String(double probability){
@@ -101,15 +106,16 @@ class _Classification extends State<Classification>{
   }
 
   RichText createNameDetailsText(String prediction, List<String> engNames, List<String> mriNames, double probability) {
-    String confidenceText = "I have ${probability2String(probability)} that this is a ";
+    //TODO: handle this stuff when all data is loaded correctly
+    String confidenceText = "With ${probability2String(probability)}, this is a ";
 
     // if probability is < threshold, return an "I don't know" message instead.
     if (probability < PROB_THRESHOLD){
       return RichText(
         text: TextSpan(
           children: <TextSpan>[
-            const TextSpan(text: "I am not confident enough to say what this might be. "),
-            TextSpan(text: probability > 0.1 ? "My best guess would be ${(prediction)}, but I'm really not sure." : "")
+            const TextSpan(text: "Confidence is too low to make a strong prediction. "),
+            TextSpan(text: probability > 0.1 ? "The best guess would be ${(prediction)}." : "")
           ],
           style: const TextStyle(color: Colors.black),
         )
@@ -122,7 +128,7 @@ class _Classification extends State<Classification>{
             children: <TextSpan>[
               TextSpan(text: confidenceText),
               TextSpan(text: prediction, style: const TextStyle(fontWeight: FontWeight.bold)),
-              const TextSpan(text: ". I don't know of any common names for this species.")
+              const TextSpan(text: ". No common names for this species found in the database.")
             ],
             style: const TextStyle(color: Colors.black),
           ),
@@ -160,6 +166,7 @@ class _Classification extends State<Classification>{
       return RichText(text: TextSpan(
         children: <TextSpan>[
           TextSpan(text: confidenceText),
+          //TextSpan(text: deprecatedEntry == true ? "deprecated entry!" : "entry acceptable"),
           TextSpan(text: topName, style: const TextStyle(fontWeight: FontWeight.bold)),
           const TextSpan(text: ".")
         ],
@@ -182,6 +189,72 @@ class _Classification extends State<Classification>{
       )
       );
     }
+  }
+
+  RichText createWikipediaText(){
+    // return nothing if the entry is deprecated
+    if (deprecatedEntry == true){
+      return RichText(text: const TextSpan(text: ""));
+    }
+
+    // otherwise, respond with wikipedia summaries
+    List<TextSpan> wikiResponses = [
+      const TextSpan(
+        text: "\nFrom ",
+        style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 24.0,
+            color: Colors.black,
+        ),
+      ),
+      TextSpan(
+        text: "Wikipedia:",
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 24.0,
+          color: Colors.amber,
+          decoration: TextDecoration.underline
+        ),
+        recognizer: TapGestureRecognizer()..onTap = () { launchUrlString(speciesNamesMap[stringID]["eng"]["wikipedia_link"]);},
+      ),
+      TextSpan(
+        text: "\n\n" + speciesNamesMap[stringID]["eng"]["wikipedia_summary"]
+      ),
+    ];
+    if (speciesNamesMap[stringID]["mri"]["wikipedia_link"] != ""){
+      wikiResponses.add(
+        const TextSpan(
+          text: "\nMai i te ",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 24.0,
+            color: Colors.black,
+          ),
+        ),
+      );
+      wikiResponses.add(
+          TextSpan(
+            text: "Wikipedia:",
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 24.0,
+                color: Colors.amber,
+                decoration: TextDecoration.underline
+            ),
+            recognizer: TapGestureRecognizer()..onTap = () { launchUrlString(speciesNamesMap[stringID]["mri"]["wikipedia_link"]);},
+          )
+      );
+      wikiResponses.add(
+        TextSpan(
+            text: "\n\n" + speciesNamesMap[stringID]["mri"]["wikipedia_summary"],
+        )
+      );
+    }
+
+    return RichText(text: TextSpan(
+      children: wikiResponses,
+      style: const TextStyle(color: Colors.black),
+    ));
   }
 
   Card createDetailsCard(List<TextSpan> details, String detailType){
@@ -255,8 +328,10 @@ class _Classification extends State<Classification>{
 
   Future loadSpeciesData() async {
     stringID = classificationResult.topFivePredictions[0].index.toString();
-    engNames = List<String>.from(speciesNamesMap[stringID]["eng"]);
-    mriNames = List<String>.from(speciesNamesMap[stringID]["mri"]);
+    //engNames = List<String>.from(speciesNamesMap[stringID]["eng"]);
+    //mriNames = List<String>.from(speciesNamesMap[stringID]["mri"]);
+    engNames = classificationResult.topFivePredictions[0].nameData.engNames;
+    mriNames = classificationResult.topFivePredictions[0].nameData.mriNames;
     bool acceptPred = classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD;  // no need to display notifications if confidence is too low
     // set plant status
     List<String> topFiveIndices = [
@@ -266,29 +341,51 @@ class _Classification extends State<Classification>{
       classificationResult.topFivePredictions[3].index.toString(),
       classificationResult.topFivePredictions[4].index.toString(),
     ];
-    int plantCount = 0;
-    int nonEmptyCount = 0;
-    for (int i = 0; i<5; i++){
-      nonEmptyCount += speciesNamesMap[topFiveIndices[i]]["kingdom"] == "" ? 0 : 1;  // if the kingdom string is empty, add nothing to the count, else 1
-      plantCount += speciesNamesMap[topFiveIndices[i]]["kingdom"] == "Plantae" ? 1 : 0;
-    }
-    if (plantCount > nonEmptyCount ~/2 || speciesNamesMap[stringID]["kingdom"] == "Plantae"){  // if most top 5 species are plants or the top prediction is a plant, the prediction is plant oriented
-      isPlantOriented = true;  // needs to be redone
+
+    // check if this information was saved with the current database
+    String imagePath = classificationResult.imagePath;
+    List<String> pathComponents = path.split(imagePath);
+    String usedVersion = pathComponents[pathComponents.length - 2];
+    //debugPrint("getting last element of split...");
+    //debugPrint(usedVersion);
+    deprecatedEntry = usedVersion != version;  // if usedVersion != current version, then the entry is deprecated and some data cannot be reliably retrieved.
+
+    if (deprecatedEntry == true) {
+      int plantCount = 0;
+      int nonEmptyCount = 0;
+      for (int i = 0; i < 5; i++) {
+        nonEmptyCount += speciesNamesMap[topFiveIndices[i]]["kingdom"] == ""
+            ? 0
+            : 1; // if the kingdom string is empty, add nothing to the count, else 1
+        plantCount +=
+        speciesNamesMap[topFiveIndices[i]]["kingdom"] == "Plantae" ? 1 : 0;
+      }
+      if (plantCount > nonEmptyCount ~/ 2 ||
+          speciesNamesMap[stringID]["kingdom"] ==
+              "Plantae") { // if most top 5 species are plants or the top prediction is a plant, the prediction is plant oriented
+        isPlantOriented = true; // needs to be redone
+      } else {
+        isPlantOriented = false;
+      }
+      // set notifiable status
+      if (speciesNamesMap[stringID]["notifiable"] == "Yes" && acceptPred) {
+        notifiableStatus = 1;
+      } else
+      if (speciesNamesMap[stringID]["notifiable"] == "No,Yes" && acceptPred) {
+        notifiableStatus = 0;
+      } else {
+        notifiableStatus = -1;
+      }
+      // set unwanted status
+      if (speciesNamesMap[stringID]["unwanted"] == "Yes" &&
+          notifiableStatus == -1 && acceptPred) {
+        isUnwanted = true;
+      } else {
+        isUnwanted = false;
+      }
     } else {
       isPlantOriented = false;
-    }
-    // set notifiable status
-    if (speciesNamesMap[stringID]["notifiable"] == "Yes" && acceptPred){
-      notifiableStatus = 1;
-    } else if (speciesNamesMap[stringID]["notifiable"] == "No,Yes" && acceptPred){
-      notifiableStatus = 0;
-    } else {
       notifiableStatus = -1;
-    }
-    // set unwanted status
-    if (speciesNamesMap[stringID]["unwanted"] == "Yes" && notifiableStatus == -1 && acceptPred) {
-      isUnwanted = true;
-    } else {
       isUnwanted = false;
     }
   }
@@ -345,6 +442,7 @@ class _Classification extends State<Classification>{
     * retrieve images using their file name only, and return a missing image
     * icon otherwise.
     * */
+    debugPrint(imagePath);
     Directory dir = await getApplicationDocumentsDirectory();
     final String dirPath = dir.path;
     final String tgtPath = '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}' + path.basename(imagePath);
@@ -400,7 +498,7 @@ class _Classification extends State<Classification>{
   Widget build(BuildContext context){
     return Scaffold(
         appBar: AppBar(
-          title: Text(classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? classificationResult.topFivePredictions[0].species : "Unknown"),
+          title: Text(classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? getCommonName(classificationResult.prediction, engNames, mriNames) : "Unknown"),
         ),
         body: Scrollbar(
             child: ListView(
@@ -428,7 +526,7 @@ class _Classification extends State<Classification>{
                           Container(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: SelectableText(
-                              classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? classificationResult.prediction : "Unkown",
+                              classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? getCommonName(classificationResult.prediction, engNames, mriNames) : "Unkown",
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 32.0,
@@ -465,6 +563,8 @@ class _Classification extends State<Classification>{
                               classificationResult.topFivePredictions[0].probability
                           ),
                           const SizedBox(height: 12),
+                          createWikipediaText(),
+                          const SizedBox(height: 12),
                           Visibility(
                             visible: isUnwanted,
                               child: createDetailsCard(
@@ -484,9 +584,10 @@ class _Classification extends State<Classification>{
                                   const TextSpan(text: "A notifiable organism could seriously harm New Zealand's primary production or our "
                                       "trade and market access. If you suspect this is a notifiable variant, consider following the steps "
                                       "outlined by the "),
-                                  const TextSpan(
+                                  TextSpan(
                                     text: "Ministry of Primary Industries.",
-                                    style: TextStyle(color: Colors.amber),
+                                    style: const TextStyle(color: Colors.amber),
+                                    recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.mpi.govt.nz/biosecurity/how-to-find-report-and-prevent-pests-and-diseases/report-a-pest-or-disease/");}
                                     //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
                                   )
                                 ], "warning"),
@@ -503,29 +604,33 @@ class _Classification extends State<Classification>{
                                   const TextSpan(text: "\n\n"),
                                   const TextSpan(text: "If the model's assessment seems reasonable, we strongly recommend reporting this "
                                       "organism by following the steps outlined by the Ministry of Primary Industries (MPI) "),
-                                  const TextSpan(
+                                  TextSpan(
                                     text: "here.",
-                                    style: TextStyle(color: Colors.amber),
+                                    style: const TextStyle(color: Colors.amber),
+                                    recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.mpi.govt.nz/biosecurity/how-to-find-report-and-prevent-pests-and-diseases/report-a-pest-or-disease/");}
                                     //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
                                   ),
                                   const TextSpan(text: "\n\n"),
                                   const TextSpan(text: "Please note that if you spot a notifiable organism, you have a legal obligation to "
                                       "report it under the "),
-                                  const TextSpan(
+                                  TextSpan(
                                     text: "Biosecurity Act 1993",
-                                    style: TextStyle(color: Colors.amber),
+                                    style: const TextStyle(color: Colors.amber),
+                                    recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.legislation.govt.nz/act/public/1993/0095/latest/DLM314623.html");}
                                     //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
                                   ),
                                   const TextSpan(text: " ("),
-                                  const TextSpan(
+                                  TextSpan(
                                     text: "Section 44",
-                                    style: TextStyle(color: Colors.amber),
+                                    style: const TextStyle(color: Colors.amber),
+                                    recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.legislation.govt.nz/act/public/1993/0095/latest/DLM315343.html");}
                                     //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
                                   ),
                                   const TextSpan(text: " and "),
-                                  const TextSpan(
+                                  TextSpan(
                                     text: "46",
-                                    style: TextStyle(color: Colors.amber),
+                                    style: const TextStyle(color: Colors.amber),
+                                    recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.legislation.govt.nz/act/public/1993/0095/latest/DLM315349.html");}
                                     //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
                                   ),
                                   const TextSpan(text: ").")

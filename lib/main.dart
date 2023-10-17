@@ -91,12 +91,12 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool _isLoading = false;
-  List<double> mean = [0.5, 0.5, 0.5];
-  List<double> std = [0.5, 0.5, 0.5];
+  List<double> mean =  [0.5, 0.5, 0.5]; //[0.485, 0.456, 0.406];
+  List<double> std = [0.5, 0.5, 0.5]; //[0.229, 0.224, 0.225]; //
   //String modelID = "species_model_squeezenet";
   String modelID = "species_model_s";
   Map<String, String> modelPaths = {
-    "species_model_s": "assets/models/species_model_s.pt",
+    "species_model_s": "assets/models/20231017_species_model_s.pt",
     "species_model_squeezenet": "assets/models/species_model_squeezenet.pt"
   };
   Map<String, int> modelDims = {
@@ -141,18 +141,18 @@ class _MyHomePageState extends State<MyHomePage> {
     NameData idNameData = NameData(
         ID,
         speciesNamesMap[stringID]["scientific_name"],
-        List<String>.from(speciesNamesMap[stringID]["mri"]),
-        List<String>.from(speciesNamesMap[stringID]["eng"])
+        List<String>.from(speciesNamesMap[stringID]["mri"]["common_names"]),
+        List<String>.from(speciesNamesMap[stringID]["eng"]["common_names"])
     );
     return idNameData;
   }
 
-  Future<List<Prediction>> _getTopFivePredictions(List? prediction, String labelPath) async {
-    List<String> labels = await _getLabels(labelPath);
+  Future<List<Prediction>> _getTopFivePredictions(List? prediction) async {
     List<Prediction> predictions = prediction!.asMap().entries.map((entry) {
       int i = entry.key;
       NameData nameData = speciesNamesBox.get(i);
-      Prediction pred = Prediction(i, labels[i], entry.value, nameData);
+      //Prediction pred = Prediction(i, labels[i], entry.value, nameData);
+      Prediction pred = Prediction(i, speciesNamesMap[i.toString()]["scientific_name"], entry.value, nameData);
       return pred;
     }).toList();
 
@@ -178,10 +178,10 @@ class _MyHomePageState extends State<MyHomePage> {
     }*/
     // instead of above approach, always reload names data every time
     debugPrint("Loading species data");
-    String namesDataString = await rootBundle.loadString("assets/labels/class_metadata.json");
+    String namesDataString = await rootBundle.loadString("assets/labels/species_14991_metadata.json");
     speciesNamesMap = jsonDecode(namesDataString);
 
-    for (int i = 0; i < 11047; i++) {
+    for (int i = 0; i < numClasses; i++) {
       speciesNamesBox.put(i, _getNameData(i));
     }
   }
@@ -208,7 +208,8 @@ class _MyHomePageState extends State<MyHomePage> {
       // store image locally
       Directory dir = await getApplicationDocumentsDirectory();
       //final String dirPath = dir.path;
-      final String dirPath = dir.path + "${Platform.pathSeparator}files";
+      final String dirPath = dir.path + "${Platform.pathSeparator}files${Platform.pathSeparator}$version";
+      debugPrint(dirPath);
       final Directory targetDir = Directory(dirPath);
       final String filename = "${DateFormat('yyyyMMddkkmmss').format(DateTime.now())}.png";
       // alternatively to checking if image was picked from gallery above, save a copy of the image always
@@ -234,7 +235,7 @@ class _MyHomePageState extends State<MyHomePage> {
         std: std,
       );
       prediction = applySoftmax(prediction);
-      List<Prediction> topFivePredictions = await _getTopFivePredictions(prediction, "assets/labels/species_names.csv");
+      List<Prediction> topFivePredictions = await _getTopFivePredictions(prediction);
       box.add(ClassificationResult(topFivePredictions[0].species, savePath, DateTime.now(), topFivePredictions));
 
       //setState(() => this.image = File(predImage.path));  // unecessary?
@@ -343,6 +344,17 @@ class _MyHomePageState extends State<MyHomePage> {
                 )
                 ),
 
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: const [
+                Expanded(child: SizedBox(
+                  child: Image(image: AssetImage('assets/logos/iNaturalist_NZ_with_kahukura_cropped.png')),
+                ),
+                ),
               ],
             ),
             const SizedBox(height: 36),

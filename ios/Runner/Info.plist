@@ -49,5 +49,9 @@
     <string>To open the camera and take pictures for immediate classifications, this app needs access to the camera.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>In case videos are taken, this app may need access to the microphone.</string>
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+        <string>https</string>
+    </array>
 </dict>
 </plist>

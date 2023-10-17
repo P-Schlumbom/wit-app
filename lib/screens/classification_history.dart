@@ -143,7 +143,7 @@ class _ClassificationHistory extends State<ClassificationHistory> {
               },
             ),
           ),
-          title: Text("${(result.topFivePredictions[0].probability >= 0.5 ? result.prediction : "Unknown")} (${((result.topFivePredictions[0].probability).toStringAsPrecision(3))})"),
+          title: Text("${(result.topFivePredictions[0].probability >= 0.5 ? (result.topFivePredictions[0].nameData.engNames.isEmpty ? result.prediction : result.topFivePredictions[0].nameData.engNames[0]) : "Unknown")} (${((result.topFivePredictions[0].probability).toStringAsPrecision(3))})"),
           subtitle: Text(DateFormat('yyyy-MM-dd - kk:mm').format(result.timestamp)),
           onTap: () {
             Navigator.push(
