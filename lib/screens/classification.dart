@@ -16,7 +16,7 @@ import 'package:wit_app/utils/custom_expansion_tile.dart';
 
 import 'package:wit_app/globals.dart';
 
-const double PROB_THRESHOLD = 0.5;
+
 
 class Classification extends StatefulWidget {
   final int classificationID;
@@ -192,8 +192,8 @@ class _Classification extends State<Classification>{
   }
 
   RichText createWikipediaText(){
-    // return nothing if the entry is deprecated
-    if (deprecatedEntry == true){
+    // return nothing if the entry is deprecated or there isn't enough confidence for a prediction
+    if (deprecatedEntry == true || classificationResult.topFivePredictions[0].probability < PROB_THRESHOLD){
       return RichText(text: const TextSpan(text: ""));
     }
 
@@ -350,7 +350,7 @@ class _Classification extends State<Classification>{
     //debugPrint(usedVersion);
     deprecatedEntry = usedVersion != version;  // if usedVersion != current version, then the entry is deprecated and some data cannot be reliably retrieved.
 
-    if (deprecatedEntry == true) {
+    if (deprecatedEntry == false) {
       int plantCount = 0;
       int nonEmptyCount = 0;
       for (int i = 0; i < 5; i++) {
@@ -368,10 +368,10 @@ class _Classification extends State<Classification>{
         isPlantOriented = false;
       }
       // set notifiable status
-      if (speciesNamesMap[stringID]["notifiable"] == "Yes" && acceptPred) {
+      if (speciesNamesMap[stringID]["notifiable"] == "Yes" && speciesNamesMap[stringID]["unwanted"] != "No,Yes" && acceptPred) {
         notifiableStatus = 1;
       } else
-      if (speciesNamesMap[stringID]["notifiable"] == "No,Yes" && acceptPred) {
+      if ((speciesNamesMap[stringID]["notifiable"] == "No,Yes" || speciesNamesMap[stringID]["unwanted"] == "No,Yes") && acceptPred) {
         notifiableStatus = 0;
       } else {
         notifiableStatus = -1;
@@ -388,6 +388,8 @@ class _Classification extends State<Classification>{
       notifiableStatus = -1;
       isUnwanted = false;
     }
+    //debugPrint("deprecatedEntry: $deprecatedEntry");
+    //debugPrint("notifiableStatus: $notifiableStatus");
   }
 
   /*Future<Text> _getSearchPath(String imagePath) async {

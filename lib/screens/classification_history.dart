@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:wit_app/classes/classification_result.dart';
+import 'package:wit_app/globals.dart';
 
 import 'package:wit_app/screens/classification.dart';
 
@@ -143,7 +144,7 @@ class _ClassificationHistory extends State<ClassificationHistory> {
               },
             ),
           ),
-          title: Text("${(result.topFivePredictions[0].probability >= 0.5 ? (result.topFivePredictions[0].nameData.engNames.isEmpty ? result.prediction : result.topFivePredictions[0].nameData.engNames[0]) : "Unknown")} (${((result.topFivePredictions[0].probability).toStringAsPrecision(3))})"),
+          title: Text("${(result.topFivePredictions[0].probability >= PROB_THRESHOLD ? (result.topFivePredictions[0].nameData.engNames.isEmpty ? result.prediction : result.topFivePredictions[0].nameData.engNames[0]) : "Unknown")} (${((result.topFivePredictions[0].probability).toStringAsPrecision(3))})"),
           subtitle: Text(DateFormat('yyyy-MM-dd - kk:mm').format(result.timestamp)),
           onTap: () {
             Navigator.push(
