@@ -41,6 +41,23 @@ class _Classification extends State<Classification>{
   late final bool deprecatedEntry;
   //Image? image;
 
+  String getTitle(){
+    if (classificationResult.topFivePredictions[0].probability < PROB_THRESHOLD ){
+      return "Unknown";
+    }
+    String returnText = classificationResult.prediction;
+    List<String> engNames = classificationResult.topFivePredictions[0].nameData.engNames.isEmpty ? [""] : classificationResult.topFivePredictions[0].nameData.engNames;
+    List<String> mriNames = classificationResult.topFivePredictions[0].nameData.mriNames.isEmpty ? [""] : classificationResult.topFivePredictions[0].nameData.mriNames;
+    //String return_text = "${getCommonName(classificationResult.prediction, engNames, mriNames)}";
+    if (engNames[0] != "") {
+      returnText = returnText + " | " + classificationResult.topFivePredictions[0].nameData.engNames[0];
+    }
+    if (mriNames[0] != "" && mriNames[0] != engNames[0]) {
+      returnText = returnText + " | " + mriNames[0];
+    }
+    return returnText;
+  }
+
   String probability2String(double probability){
     if (probability <= 0.001) {
       return "monstrously infinitesimal confidence";
@@ -539,7 +556,7 @@ class _Classification extends State<Classification>{
                           Container(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: SelectableText(
-                              classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? getCommonName(classificationResult.prediction, engNames, mriNames) : "Unkown",
+                              getTitle(),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 32.0,
