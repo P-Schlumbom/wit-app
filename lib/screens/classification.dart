@@ -198,29 +198,40 @@ class _Classification extends State<Classification>{
     }
 
     // otherwise, respond with wikipedia summaries
-    List<TextSpan> wikiResponses = [
-      const TextSpan(
-        text: "\nFrom ",
-        style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 24.0,
-            color: Colors.black,
+    List<TextSpan> wikiResponses = [];
+    if (speciesNamesMap[stringID]["eng"]["wikipedia_link"] != "") {
+      wikiResponses.add(
+          const TextSpan(
+            text: "\nFrom ",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 24.0,
+              color: Colors.black,
+            ),
+          )
+      );
+      wikiResponses.add(
+        TextSpan(
+          text: "Wikipedia:",
+          style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 24.0,
+              color: Colors.amber,
+              decoration: TextDecoration.underline
+          ),
+          recognizer: TapGestureRecognizer()..onTap = () { launchUrlString(speciesNamesMap[stringID]["eng"]["wikipedia_link"]);},
         ),
-      ),
-      TextSpan(
-        text: "Wikipedia:",
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 24.0,
-          color: Colors.amber,
-          decoration: TextDecoration.underline
-        ),
-        recognizer: TapGestureRecognizer()..onTap = () { launchUrlString(speciesNamesMap[stringID]["eng"]["wikipedia_link"]);},
-      ),
-      TextSpan(
-        text: "\n\n" + speciesNamesMap[stringID]["eng"]["wikipedia_summary"]
-      ),
-    ];
+      );
+      wikiResponses.add(
+          TextSpan(
+              text: "\n\n" + speciesNamesMap[stringID]["eng"]["wikipedia_summary"]
+          )
+      );
+      // add some extra newlines if mri entries exist as well
+      if (speciesNamesMap[stringID]["mri"]["wikipedia_link"] != "") {
+        wikiResponses.add(const TextSpan(text: "\n\n",));
+      }
+    }
     if (speciesNamesMap[stringID]["mri"]["wikipedia_link"] != ""){
       wikiResponses.add(
         const TextSpan(

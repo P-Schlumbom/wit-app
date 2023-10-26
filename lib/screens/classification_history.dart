@@ -118,6 +118,17 @@ class _ClassificationHistory extends State<ClassificationHistory> {
     return null;
   }
 
+  Text getTitleName(ClassificationResult result){
+    if (result.topFivePredictions[0].probability < PROB_THRESHOLD){
+      return Text("Unknown (${((result.topFivePredictions[0].probability).toStringAsPrecision(3))})");
+    }
+    if (result.topFivePredictions[0].nameData.engNames.isEmpty 
+        || result.topFivePredictions[0].nameData.engNames[0] == "") {
+      return Text("${result.prediction} (${((result.topFivePredictions[0].probability).toStringAsPrecision(3))})");
+    }
+    return Text("${result.topFivePredictions[0].nameData.engNames[0]} (${((result.topFivePredictions[0].probability).toStringAsPrecision(3))})");
+  }
+
 /*if (await iosTmpFile2.exists()){
         return Image.file(iosTmpFile2,
             width: 64,
@@ -144,7 +155,7 @@ class _ClassificationHistory extends State<ClassificationHistory> {
               },
             ),
           ),
-          title: Text("${(result.topFivePredictions[0].probability >= PROB_THRESHOLD ? (result.topFivePredictions[0].nameData.engNames.isEmpty ? result.prediction : result.topFivePredictions[0].nameData.engNames[0]) : "Unknown")} (${((result.topFivePredictions[0].probability).toStringAsPrecision(3))})"),
+          title: getTitleName(result),
           subtitle: Text(DateFormat('yyyy-MM-dd - kk:mm').format(result.timestamp)),
           onTap: () {
             Navigator.push(
