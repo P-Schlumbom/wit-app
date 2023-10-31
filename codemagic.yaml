@@ -1,0 +1,4 @@
+workflows:
+  Default Workflow:
+    environment:
+      java: 19

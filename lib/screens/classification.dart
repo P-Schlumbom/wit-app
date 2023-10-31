@@ -532,6 +532,8 @@ class _Classification extends State<Classification>{
         ),
         body: Scrollbar(
             child: ListView(
+              //physics: const ScrollPhysics(),
+              //shrinkWrap: true,
               children: [
                 FittedBox(
                   child: FutureBuilder<Image?>(  // wait for image to be found/loaded and display icon in the meantime
