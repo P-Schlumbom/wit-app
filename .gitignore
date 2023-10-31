@@ -47,3 +47,5 @@ app.*.map.json
 
 /assets/models/*
 # !assets/models/species_model_squeezenet.pt  # ignore for android version
+!gradle-wrapper.jar
+
