@@ -40,6 +40,7 @@ class _Classification extends State<Classification>{
   late final String wikipediaLink;
   late final bool deprecatedEntry;
   //Image? image;
+  final ScrollController controller = ScrollController();
 
   String getTitle(){
     if (classificationResult.topFivePredictions[0].probability < PROB_THRESHOLD ){
@@ -122,33 +123,33 @@ class _Classification extends State<Classification>{
     return returnName;
   }
 
-  RichText createNameDetailsText(String prediction, List<String> engNames, List<String> mriNames, double probability) {
+  Future<RichText> createNameDetailsText(String prediction, List<String> engNames, List<String> mriNames, double probability) async {
     //TODO: handle this stuff when all data is loaded correctly
     String confidenceText = "With ${probability2String(probability)}, this is a ";
 
     // if probability is < threshold, return an "I don't know" message instead.
     if (probability < PROB_THRESHOLD){
       return RichText(
-        text: TextSpan(
-          children: <TextSpan>[
-            const TextSpan(text: "Confidence is too low to make a strong prediction. "),
-            TextSpan(text: probability > 0.1 ? "The best guess would be ${(prediction)}." : "")
-          ],
-          style: const TextStyle(color: Colors.black),
-        )
+          text: TextSpan(
+            children: <TextSpan>[
+              const TextSpan(text: "Confidence is too low to make a strong prediction. "),
+              TextSpan(text: probability > 0.1 ? "The best guess would be ${(prediction)}." : "")
+            ],
+            style: const TextStyle(color: Colors.black),
+          )
       );
     }
 
     if (engNames.isEmpty && mriNames.isEmpty || (engNames[0] == "" && mriNames[0] == "")){
       return RichText(
-          text: TextSpan(
-            children: <TextSpan>[
-              TextSpan(text: confidenceText),
-              TextSpan(text: prediction, style: const TextStyle(fontWeight: FontWeight.bold)),
-              const TextSpan(text: ". No common names for this species found in the database.")
-            ],
-            style: const TextStyle(color: Colors.black),
-          ),
+        text: TextSpan(
+          children: <TextSpan>[
+            TextSpan(text: confidenceText),
+            TextSpan(text: prediction, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const TextSpan(text: ". No common names for this species found in the database.")
+          ],
+          style: const TextStyle(color: Colors.black),
+        ),
       );
     }
 
@@ -164,18 +165,18 @@ class _Classification extends State<Classification>{
     *   THEN use top eng
     *   ELSE use top mri*/
     String topName = (topEngName != "" && topMriName != "") ?
-      ((topEngName == topMriName) ?
-        topEngName :
-        "$topMriName, or $topEngName") :
-      ((topEngName != "") ?
-        topEngName :
-        topMriName);
+    ((topEngName == topMriName) ?
+    topEngName :
+    "$topMriName, or $topEngName") :
+    ((topEngName != "") ?
+    topEngName :
+    topMriName);
 
     List<String> remainingNames = (topEngName != "" && topMriName != "") ?
-      (List.from(engNames.sublist(1))..addAll(mriNames.sublist(1))) :
-      ((topEngName != "") ?
-        engNames.sublist(1) :
-        mriNames.sublist(1));
+    (List.from(engNames.sublist(1))..addAll(mriNames.sublist(1))) :
+    ((topEngName != "") ?
+    engNames.sublist(1) :
+    mriNames.sublist(1));
     remainingNames = remainingNames.toSet().toList();
 
     if (remainingNames.isEmpty){
@@ -208,7 +209,7 @@ class _Classification extends State<Classification>{
     }
   }
 
-  RichText createWikipediaText(){
+  Future<RichText> createWikipediaText() async {
     // return nothing if the entry is deprecated or there isn't enough confidence for a prediction
     if (deprecatedEntry == true || classificationResult.topFivePredictions[0].probability < PROB_THRESHOLD){
       return RichText(text: const TextSpan(text: ""));
@@ -273,9 +274,9 @@ class _Classification extends State<Classification>{
           )
       );
       wikiResponses.add(
-        TextSpan(
+          TextSpan(
             text: "\n\n" + speciesNamesMap[stringID]["mri"]["wikipedia_summary"],
-        )
+          )
       );
     }
 
@@ -285,7 +286,30 @@ class _Classification extends State<Classification>{
     ));
   }
 
-  Card createDetailsCard(List<TextSpan> details, String detailType){
+  Card createBasicCard(){
+    List<TextSpan> placeholder = [const TextSpan(text: "")];
+    return Card(
+      elevation: 0,
+      color: const Color(0xFFeff6e0),
+      child: Container(
+          padding: const EdgeInsets.all(8),
+          child: RichText(
+            text: TextSpan(
+                children: placeholder,
+                style: const TextStyle(color: Colors.teal)
+            ),
+          )
+      ),
+      shape: const RoundedRectangleBorder(
+          side: BorderSide(
+            color: Colors.teal,
+          ),
+          borderRadius: BorderRadius.all(Radius.circular(12))
+      ),
+    );
+  }
+
+  Future<Card> createDetailsCard(List<TextSpan> details, String detailType) async {
     Color tileColor = const Color(0xFFeff6e0);
     Color textColor = Colors.teal;
     switch (detailType) {
@@ -317,10 +341,10 @@ class _Classification extends State<Classification>{
             )
         ),
         shape: const RoundedRectangleBorder(
-          side: BorderSide(
-            color: Colors.teal,
-          ),
-          borderRadius: BorderRadius.all(Radius.circular(12))
+            side: BorderSide(
+              color: Colors.teal,
+            ),
+            borderRadius: BorderRadius.all(Radius.circular(12))
         ),
       );
     }
@@ -329,13 +353,13 @@ class _Classification extends State<Classification>{
         elevation: 2,
         color: tileColor,
         child: Container(
-          padding: const EdgeInsets.all(8),
-          child: RichText(
-            text: TextSpan(
-              children: details,
-              style: TextStyle(color: textColor)
-            ),
-          )
+            padding: const EdgeInsets.all(8),
+            child: RichText(
+              text: TextSpan(
+                  children: details,
+                  style: TextStyle(color: textColor)
+              ),
+            )
         ),
         shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(12))
@@ -513,7 +537,7 @@ class _Classification extends State<Classification>{
       return null;
     }
     return null;
-    }
+  }
 
   @override
   void initState() {
@@ -530,10 +554,11 @@ class _Classification extends State<Classification>{
         appBar: AppBar(
           title: Text(classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? getCommonName(classificationResult.prediction, engNames, mriNames) : "Unknown"),
         ),
-        body: Scrollbar(
+        body: SingleChildScrollView(
             child: ListView(
-              //physics: const ScrollPhysics(),
-              //shrinkWrap: true,
+              controller: controller,
+              physics: const ScrollPhysics(),
+              shrinkWrap: true,
               children: [
                 FittedBox(
                   child: FutureBuilder<Image?>(  // wait for image to be found/loaded and display icon in the meantime
@@ -574,99 +599,153 @@ class _Classification extends State<Classification>{
                             ),
                           ),
                           Visibility(
-                            visible: isPlantOriented,
+                              visible: isPlantOriented,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 12),
-                                  createDetailsCard(<TextSpan>[
-                                    const TextSpan(text: "Are you trying to classify plants?\t"),
-                                    const TextSpan(text: "We recommend taking close-up photographs of individual leaves, rather than "
-                                        "images of the whole plant - the model tends to perform better that way.")
-                                  ], "helper")
+                                  FutureBuilder<Card>(
+                                    future: createDetailsCard(<TextSpan>[
+                                      const TextSpan(text: "Are you trying to classify plants?\t"),
+                                      const TextSpan(text: "We recommend taking close-up photographs of individual leaves, rather than "
+                                          "images of the whole plant - the model tends to perform better that way.")
+                                    ], "helper"),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.hasData) {
+                                        return snapshot.data ?? createBasicCard();
+                                      } else {
+                                        return createBasicCard();
+                                      }
+                                    },
+                                  )
                                 ],
                               )
                           ),
                           const SizedBox(height: 12),
-                          createNameDetailsText(
-                              classificationResult.prediction,
-                              engNames,
-                              mriNames,
-                              classificationResult.topFivePredictions[0].probability
+                          FutureBuilder<RichText>(
+                            future: createNameDetailsText(
+                                classificationResult.prediction,
+                                engNames,
+                                mriNames,
+                                classificationResult.topFivePredictions[0].probability
+                            ),
+                            builder: (context, snapshot){
+                              if (snapshot.hasData) {
+                                return snapshot.data ?? const Text("");
+                              } else {
+                                return const Text("");
+                              }
+                            },
                           ),
                           const SizedBox(height: 12),
-                          createWikipediaText(),
+                          FutureBuilder<RichText>(
+                              future: createWikipediaText(),
+                              builder: (context, snapshot){
+                                if (snapshot.hasData) {
+                                  return snapshot.data ?? const Text("");
+                                } else {
+                                  return const Text("");
+                                }
+                              }
+                          ),
                           const SizedBox(height: 12),
                           Visibility(
-                            visible: isUnwanted,
-                              child: createDetailsCard(
-                              <TextSpan>[
-                              const TextSpan(text: "The Ministry of Primary Industries (MPI) considers this to be an "),
-                              const TextSpan(text: "unwanted ", style: TextStyle(fontWeight: FontWeight.bold)),
-                              const TextSpan(text: "organism.")
-                              ], "warning")
+                              visible: isUnwanted,
+                              child: FutureBuilder<Card>(
+                                future: createDetailsCard(
+                                    <TextSpan>[
+                                      const TextSpan(text: "The Ministry of Primary Industries (MPI) considers this to be an "),
+                                      const TextSpan(text: "unwanted ", style: TextStyle(fontWeight: FontWeight.bold)),
+                                      const TextSpan(text: "organism.")
+                                    ], "warning"),
+                                builder: (context, snapshot) {
+                                  if (snapshot.hasData) {
+                                    return snapshot.data ?? createBasicCard();
+                                  } else {
+                                    return createBasicCard();
+                                  }
+                                },
+                              )
                           ),
                           Visibility(
                             visible: notifiableStatus == 0,
-                            child: createDetailsCard(
-                                <TextSpan>[
-                                  const TextSpan(text: "There are multiple variants of this species, some of which are "
-                                      "considered notifiable pests. Unfortunately, the classifier cannot distinguish between these variants."),
-                                  const TextSpan(text: "\n\n"),
-                                  const TextSpan(text: "A notifiable organism could seriously harm New Zealand's primary production or our "
-                                      "trade and market access. If you suspect this is a notifiable variant, consider following the steps "
-                                      "outlined by the "),
-                                  TextSpan(
-                                    text: "Ministry of Primary Industries.",
-                                    style: const TextStyle(color: Colors.amber),
-                                    recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.mpi.govt.nz/biosecurity/how-to-find-report-and-prevent-pests-and-diseases/report-a-pest-or-disease/");}
-                                    //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                                  )
-                                ], "warning"),
+                            child: FutureBuilder<Card>(
+                              future: createDetailsCard(
+                                  <TextSpan>[
+                                    const TextSpan(text: "There are multiple variants of this species, some of which are "
+                                        "considered notifiable pests. Unfortunately, the classifier cannot distinguish between these variants."),
+                                    const TextSpan(text: "\n\n"),
+                                    const TextSpan(text: "A notifiable organism could seriously harm New Zealand's primary production or our "
+                                        "trade and market access. If you suspect this is a notifiable variant, consider following the steps "
+                                        "outlined by the "),
+                                    TextSpan(
+                                        text: "Ministry of Primary Industries.",
+                                        style: const TextStyle(color: Colors.amber),
+                                        recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.mpi.govt.nz/biosecurity/how-to-find-report-and-prevent-pests-and-diseases/report-a-pest-or-disease/");}
+                                      //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                                    )
+                                  ], "warning"),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData) {
+                                  return snapshot.data ?? createBasicCard();
+                                } else {
+                                  return createBasicCard();
+                                }
+                              },
+                            ),
                           ),
                           Visibility(
                             visible: notifiableStatus == 1,
-                            child: createDetailsCard(
-                                <TextSpan>[
-                                  const TextSpan(text: "Warning! This appears to be a "),
-                                  const TextSpan(text: "notifiable organism!", style: TextStyle(fontWeight: FontWeight.bold)),
-                                  const TextSpan(text: "\n\n"),
-                                  const TextSpan(text: "Notifiable organisms could seriously harm New Zealand's primary production or our "
-                                      "trade and market access."),
-                                  const TextSpan(text: "\n\n"),
-                                  const TextSpan(text: "If the model's assessment seems reasonable, we strongly recommend reporting this "
-                                      "organism by following the steps outlined by the Ministry of Primary Industries (MPI) "),
-                                  TextSpan(
-                                    text: "here.",
-                                    style: const TextStyle(color: Colors.amber),
-                                    recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.mpi.govt.nz/biosecurity/how-to-find-report-and-prevent-pests-and-diseases/report-a-pest-or-disease/");}
-                                    //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                                  ),
-                                  const TextSpan(text: "\n\n"),
-                                  const TextSpan(text: "Please note that if you spot a notifiable organism, you have a legal obligation to "
-                                      "report it under the "),
-                                  TextSpan(
-                                    text: "Biosecurity Act 1993",
-                                    style: const TextStyle(color: Colors.amber),
-                                    recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.legislation.govt.nz/act/public/1993/0095/latest/DLM314623.html");}
-                                    //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                                  ),
-                                  const TextSpan(text: " ("),
-                                  TextSpan(
-                                    text: "Section 44",
-                                    style: const TextStyle(color: Colors.amber),
-                                    recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.legislation.govt.nz/act/public/1993/0095/latest/DLM315343.html");}
-                                    //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                                  ),
-                                  const TextSpan(text: " and "),
-                                  TextSpan(
-                                    text: "46",
-                                    style: const TextStyle(color: Colors.amber),
-                                    recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.legislation.govt.nz/act/public/1993/0095/latest/DLM315349.html");}
-                                    //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
-                                  ),
-                                  const TextSpan(text: ").")
-                                ], "alert"),
+                            child: FutureBuilder<Card>(
+                              future: createDetailsCard(
+                                  <TextSpan>[
+                                    const TextSpan(text: "Warning! This appears to be a "),
+                                    const TextSpan(text: "notifiable organism!", style: TextStyle(fontWeight: FontWeight.bold)),
+                                    const TextSpan(text: "\n\n"),
+                                    const TextSpan(text: "Notifiable organisms could seriously harm New Zealand's primary production or our "
+                                        "trade and market access."),
+                                    const TextSpan(text: "\n\n"),
+                                    const TextSpan(text: "If the model's assessment seems reasonable, we strongly recommend reporting this "
+                                        "organism by following the steps outlined by the Ministry of Primary Industries (MPI) "),
+                                    TextSpan(
+                                        text: "here.",
+                                        style: const TextStyle(color: Colors.amber),
+                                        recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.mpi.govt.nz/biosecurity/how-to-find-report-and-prevent-pests-and-diseases/report-a-pest-or-disease/");}
+                                      //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                                    ),
+                                    const TextSpan(text: "\n\n"),
+                                    const TextSpan(text: "Please note that if you spot a notifiable organism, you have a legal obligation to "
+                                        "report it under the "),
+                                    TextSpan(
+                                        text: "Biosecurity Act 1993",
+                                        style: const TextStyle(color: Colors.amber),
+                                        recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.legislation.govt.nz/act/public/1993/0095/latest/DLM314623.html");}
+                                      //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                                    ),
+                                    const TextSpan(text: " ("),
+                                    TextSpan(
+                                        text: "Section 44",
+                                        style: const TextStyle(color: Colors.amber),
+                                        recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.legislation.govt.nz/act/public/1993/0095/latest/DLM315343.html");}
+                                      //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                                    ),
+                                    const TextSpan(text: " and "),
+                                    TextSpan(
+                                        text: "46",
+                                        style: const TextStyle(color: Colors.amber),
+                                        recognizer: TapGestureRecognizer()..onTap = () { launchUrlString("https://www.legislation.govt.nz/act/public/1993/0095/latest/DLM315349.html");}
+                                      //recognizer: TapGestureRecognizer()..onTap = () {launch} // link here, based on https://stackoverflow.com/questions/43583411/how-to-create-a-hyperlink-in-flutter-widget
+                                    ),
+                                    const TextSpan(text: ").")
+                                  ], "alert"),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData) {
+                                  return snapshot.data ?? createBasicCard();
+                                } else {
+                                  return createBasicCard();
+                                }
+                              },
+                            ),
                           ),
                           const SizedBox(height: 12),
                           CustomExpansionTile(
