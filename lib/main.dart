@@ -128,6 +128,10 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  List? applyTemperatureScaling(List? prediction) {
+    return prediction!.map((x) {return x * LOGIT_CALIBRATION_SCALE;}).toList();
+  }
+
   List? applySoftmax(List? prediction) {
     double exponentSum = 0;
     for (int i=0; i<prediction!.length; i++){
@@ -234,6 +238,7 @@ class _MyHomePageState extends State<MyHomePage> {
         mean: mean,
         std: std,
       );
+      prediction = applyTemperatureScaling(prediction);
       prediction = applySoftmax(prediction);
       List<Prediction> topFivePredictions = await _getTopFivePredictions(prediction);
       box.add(ClassificationResult(topFivePredictions[0].species, savePath, DateTime.now(), topFivePredictions));
