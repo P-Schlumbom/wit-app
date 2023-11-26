@@ -65,7 +65,7 @@ class MyApp extends StatelessWidget {
       title: 'WIT app',
       theme: ThemeData(
         primarySwatch: Colors.teal,
-        scaffoldBackgroundColor: Color(0xFFeff6e0),
+        scaffoldBackgroundColor: const Color(0xFFeff6e0),
         /*textTheme: TextTheme(
           bodyLarge: TextStyle(color: Colors.indigo.shade900),
           bodyMedium: TextStyle(color: Colors.indigo.shade900),
@@ -100,7 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
     "species_model_squeezenet": "assets/models/species_model_squeezenet.pt"
   };
   Map<String, int> modelDims = {
-    "species_model_s": 768,
+    "species_model_s": 384,
     "species_model_squeezenet": 224
   };
 
@@ -264,10 +264,10 @@ class _MyHomePageState extends State<MyHomePage> {
     required VoidCallback onClicked,
   }) => ElevatedButton(
     style: ElevatedButton.styleFrom(
-        minimumSize: Size.fromHeight(56),
+        minimumSize: const Size.fromHeight(56),
         primary: Colors.amber,
         onPrimary: Colors.white,
-        textStyle: TextStyle(fontSize: 20),
+        textStyle: const TextStyle(fontSize: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28.0))
     ),
     child: Row(
@@ -306,14 +306,14 @@ class _MyHomePageState extends State<MyHomePage> {
         // processed, should display the loading wheel.
       )
           : Container(
-        padding: EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
         child: Column(
           children: <Widget>[
-            Spacer(),
-            Row(
+            const Spacer(),
+            const Row(
               mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: const [
+              children: [
                 //Image(image: AssetImage('assets/logos/Waikato Regional Council logo.jpg'),),
                 //Image(image: AssetImage('assets/logos/TAIAO.png')),
                 Expanded(child: SizedBox(
@@ -331,10 +331,10 @@ class _MyHomePageState extends State<MyHomePage> {
               ],
             ),
             const SizedBox(height: 24),
-            Row(
+            const Row(
               mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: const [
+              children: [
                 //Image(image: AssetImage('assets/logos/Waikato Regional Council logo.jpg'),),
                 //Image(image: AssetImage('assets/logos/TAIAO.png')),
                 Expanded(child: SizedBox(
@@ -352,10 +352,10 @@ class _MyHomePageState extends State<MyHomePage> {
               ],
             ),
             const SizedBox(height: 24),
-            Row(
+            const Row(
               mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: const [
+              children: [
                 Expanded(child: SizedBox(
                   child: Image(image: AssetImage('assets/logos/iNaturalist_NZ_with_kahukura_cropped.png')),
                 ),
@@ -401,7 +401,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   );
                 }),
 
-            Spacer(),
+            const Spacer(),
           ],
         ),
       ),
