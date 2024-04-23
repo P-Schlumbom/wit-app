@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
@@ -18,6 +18,15 @@ import 'package:pytorch_mobile/enums/dtype.dart';
 
 import 'package:flutter/foundation.dart';  // for debugPrint
 
+import 'package:shared_preferences_android/shared_preferences_android.dart';
+import 'package:shared_preferences_ios/shared_preferences_ios.dart';
+
+import 'package:path_provider_android/path_provider_android.dart';
+import 'package:path_provider_ios/path_provider_ios.dart';
+
+import 'package:image_picker/image_picker.dart';
+
+import 'globals.dart';
 import 'classes/classification_result.dart';
 //import 'classes/custom_models.dart';  // potential alternative to pytorch_mobile/model.dart
 import 'classes/prediction.dart';
@@ -28,6 +37,13 @@ import 'screens/model_manager.dart';
 
 
 void main() async {
+
+  if (Platform.isAndroid) SharedPreferencesAndroid.registerWith();
+  if (Platform.isIOS) SharedPreferencesIOS.registerWith();
+
+  if (Platform.isAndroid) PathProviderAndroid.registerWith();
+  if (Platform.isIOS) PathProviderIOS.registerWith();
+
   // Initialize hive database and prepare it
   await Hive.initFlutter();
   Hive.registerAdapter(ClassificationResultAdapter());  // register the adapter
@@ -49,9 +65,17 @@ class MyApp extends StatelessWidget {
       title: 'WIT app',
       theme: ThemeData(
         primarySwatch: Colors.teal,
-        scaffoldBackgroundColor: Color(0xFFeff6e0),
+        scaffoldBackgroundColor: const Color(0xFFeff6e0),
+        /*textTheme: TextTheme(
+          bodyLarge: TextStyle(color: Colors.indigo.shade900),
+          bodyMedium: TextStyle(color: Colors.indigo.shade900),
+          bodySmall: TextStyle(color: Colors.indigo.shade900),
+          //bodyText1: TextStyle(color: Colors.indigo.shade900),
+          //bodyText2: TextStyle(color: Colors.indigo.shade900),
+        )*/
       ),
       home: const MyHomePage(title: 'What Is This?'),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -67,26 +91,26 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool _isLoading = false;
-  List<double> mean = [0.5, 0.5, 0.5];
-  List<double> std = [0.5, 0.5, 0.5];
+  List<double> mean =  [0.5, 0.5, 0.5]; //[0.485, 0.456, 0.406];
+  List<double> std = [0.5, 0.5, 0.5]; //[0.229, 0.224, 0.225]; //
   //String modelID = "species_model_squeezenet";
   String modelID = "species_model_s";
   Map<String, String> modelPaths = {
-    "species_model_s": "assets/models/species_model_s.pt",
+    "species_model_s": "assets/models/20231017_species_model_s.pt",
     "species_model_squeezenet": "assets/models/species_model_squeezenet.pt"
   };
   Map<String, int> modelDims = {
-    "species_model_s": 768,
+    "species_model_s": 768,  // using this works better?!
     "species_model_squeezenet": 224
   };
 
-  File? image;// = File("assets/logos/TAIAO.png");
+  //File? image;// = File("assets/logos/TAIAO.png");
   Model? imageModel;
   //PostProcessingModel? imageModel;
   String? imagePrediction;
   late final Box box;
   late final Box speciesNamesBox;
-  late final Map<String, dynamic> speciesNamesMap;
+  //late final Map<String, dynamic> speciesNamesMap;
 
   Future<List<String>> _getLabels(String labelPath) async {
     String labelsData = await rootBundle.loadString(labelPath);
@@ -104,6 +128,10 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  List? applyTemperatureScaling(List? prediction) {
+    return prediction!.map((x) {return x * LOGIT_CALIBRATION_SCALE;}).toList();
+  }
+
   List? applySoftmax(List? prediction) {
     double exponentSum = 0;
     for (int i=0; i<prediction!.length; i++){
@@ -117,18 +145,18 @@ class _MyHomePageState extends State<MyHomePage> {
     NameData idNameData = NameData(
         ID,
         speciesNamesMap[stringID]["scientific_name"],
-        List<String>.from(speciesNamesMap[stringID]["mri"]),
-        List<String>.from(speciesNamesMap[stringID]["eng"])
+        List<String>.from(speciesNamesMap[stringID]["mri"]["common_names"]),
+        List<String>.from(speciesNamesMap[stringID]["eng"]["common_names"])
     );
     return idNameData;
   }
 
-  Future<List<Prediction>> _getTopFivePredictions(List? prediction, String labelPath) async {
-    List<String> labels = await _getLabels(labelPath);
+  Future<List<Prediction>> _getTopFivePredictions(List? prediction) async {
     List<Prediction> predictions = prediction!.asMap().entries.map((entry) {
       int i = entry.key;
       NameData nameData = speciesNamesBox.get(i);
-      Prediction pred = Prediction(i, labels[i], entry.value, nameData);
+      //Prediction pred = Prediction(i, labels[i], entry.value, nameData);
+      Prediction pred = Prediction(i, speciesNamesMap[i.toString()]["scientific_name"], entry.value, nameData);
       return pred;
     }).toList();
 
@@ -139,7 +167,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future loadNamesData() async {
-    if (speciesNamesBox.values.length != 11047) {
+    /*if (speciesNamesBox.values.length != 11047) {
       debugPrint("Updating speciesNamesBox because it currently contains ${speciesNamesBox.values.length} items instead of 11047");
       String namesDataString = await rootBundle.loadString("assets/labels/class_metadata.json");
       speciesNamesMap = jsonDecode(namesDataString);
@@ -147,6 +175,18 @@ class _MyHomePageState extends State<MyHomePage> {
       for (int i = 0; i < 11047; i++) {
         speciesNamesBox.put(i, _getNameData(i));
       }
+    } else {
+      debugPrint("Loading data string");
+      String namesDataString = await rootBundle.loadString("assets/labels/class_metadata.json");
+      speciesNamesMap = jsonDecode(namesDataString);
+    }*/
+    // instead of above approach, always reload names data every time
+    debugPrint("Loading species data");
+    String namesDataString = await rootBundle.loadString("assets/labels/species_14991_metadata.json");
+    speciesNamesMap = jsonDecode(namesDataString);
+
+    for (int i = 0; i < numClasses; i++) {
+      speciesNamesBox.put(i, _getNameData(i));
     }
   }
 
@@ -171,15 +211,19 @@ class _MyHomePageState extends State<MyHomePage> {
 
       // store image locally
       Directory dir = await getApplicationDocumentsDirectory();
-      final String dirPath = dir.path;
-      // IF image is not picked from gallery,
-      // copy image to the new path
-      if (source != ImageSource.gallery){
-        String savePath = '$dirPath${Platform.pathSeparator}files${Platform.pathSeparator}${DateFormat('yyyyMMddkkmmss').format(DateTime.now())}.png';
-        //debugPrint(savePath);
-        //final XFile storedImage = await predImage.copy(newPath);
-        predImage.saveTo(savePath);
+      //final String dirPath = dir.path;
+      final String dirPath = dir.path + "${Platform.pathSeparator}files${Platform.pathSeparator}$version";
+      debugPrint(dirPath);
+      final Directory targetDir = Directory(dirPath);
+      final String filename = "${DateFormat('yyyyMMddkkmmss').format(DateTime.now())}.png";
+      // alternatively to checking if image was picked from gallery above, save a copy of the image always
+      String savePath = '$dirPath${Platform.pathSeparator}' + filename;
+
+      if (!await targetDir.exists()) {
+        await targetDir.create(recursive: true);
       }
+
+      await predImage.saveTo(savePath);
 
       setState(() {
         _isLoading = true;
@@ -194,11 +238,12 @@ class _MyHomePageState extends State<MyHomePage> {
         mean: mean,
         std: std,
       );
+      prediction = applyTemperatureScaling(prediction);
       prediction = applySoftmax(prediction);
-      List<Prediction> topFivePredictions = await _getTopFivePredictions(prediction, "assets/labels/species_names.csv");
-      box.add(ClassificationResult(topFivePredictions[0].species, predImage.path, DateTime.now(), topFivePredictions));
+      List<Prediction> topFivePredictions = await _getTopFivePredictions(prediction);
+      box.add(ClassificationResult(topFivePredictions[0].species, savePath, DateTime.now(), topFivePredictions));
 
-      setState(() => this.image = File(predImage.path));
+      //setState(() => this.image = File(predImage.path));  // unecessary?
       setState(() {
         _isLoading = false;
       });
@@ -219,10 +264,10 @@ class _MyHomePageState extends State<MyHomePage> {
     required VoidCallback onClicked,
   }) => ElevatedButton(
     style: ElevatedButton.styleFrom(
-        minimumSize: Size.fromHeight(56),
+        minimumSize: const Size.fromHeight(56),
         primary: Colors.amber,
         onPrimary: Colors.white,
-        textStyle: TextStyle(fontSize: 20),
+        textStyle: const TextStyle(fontSize: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28.0))
     ),
     child: Row(
@@ -261,22 +306,75 @@ class _MyHomePageState extends State<MyHomePage> {
         // processed, should display the loading wheel.
       )
           : Container(
-        padding: EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
         child: Column(
           children: <Widget>[
-            Spacer(),
-            image != null ? ClipOval(
+            const Spacer(),
+            const Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                //Image(image: AssetImage('assets/logos/Waikato Regional Council logo.jpg'),),
+                //Image(image: AssetImage('assets/logos/TAIAO.png')),
+                Expanded(child: SizedBox(
+                  //height: 64.0,
+                  child: Image(image: AssetImage('assets/logos/2020_School of Comp and Math Sciences w Logo.png')),
+                ),
+                ),
+                SizedBox(width: 6),
+                Expanded(child: SizedBox(
+                  //height: 64.0,
+                  child: Image(image: AssetImage('assets/logos/UCBlack_cropped.png')),
+                )
+                ),
+
+              ],
+            ),
+            const SizedBox(height: 24),
+            const Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                //Image(image: AssetImage('assets/logos/Waikato Regional Council logo.jpg'),),
+                //Image(image: AssetImage('assets/logos/TAIAO.png')),
+                Expanded(child: SizedBox(
+                  //height: 64.0,
+                  child: Image(image: AssetImage('assets/logos/TAIAO.png')),
+                ),
+                ),
+                SizedBox(width: 6),
+                Expanded(child: SizedBox(
+                  //height: 64.0,
+                  child: Image(image: AssetImage('assets/logos/AI_institute.png')),
+                )
+                ),
+
+              ],
+            ),
+            const SizedBox(height: 24),
+            const Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Expanded(child: SizedBox(
+                  child: Image(image: AssetImage('assets/logos/iNaturalist_NZ_with_kahukura_cropped.png')),
+                ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 36),
+            /*image != null ? ClipOval(
                 child: Image.file(
                   image!,
-                  width: 255,
-                  height: 255,
+                  width: 224,
+                  height: 224,
                   fit: BoxFit.cover,)
             )
-                : Container(
+                : const SizedBox.shrink(),/*Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
               child: const Image(image: AssetImage('assets/logos/TAIAO.png')),
-            ),
-            const SizedBox(height: 48),
+            ),*/
+            const SizedBox(height: 12),*/
             _buildButton(title: 'Pick Camera',
                 icon: Icons.camera_alt_outlined,
                 onClicked: () => _pickImage(context, ImageSource.camera)),
@@ -302,7 +400,8 @@ class _MyHomePageState extends State<MyHomePage> {
                       MaterialPageRoute(builder: (context) => const ModelManager())
                   );
                 }),
-            Spacer(),
+
+            const Spacer(),
           ],
         ),
       ),
