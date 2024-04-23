@@ -100,7 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
     "species_model_squeezenet": "assets/models/species_model_squeezenet.pt"
   };
   Map<String, int> modelDims = {
-    "species_model_s": 384,
+    "species_model_s": 768,  // using this works better?!
     "species_model_squeezenet": 224
   };
 
