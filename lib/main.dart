@@ -100,7 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
     "species_model_squeezenet": "assets/models/species_model_squeezenet.pt"
   };
   Map<String, int> modelDims = {
-    "species_model_s": 768,  // using this works better?!
+    "species_model_s": 768, //384  // using this works better?!
     "species_model_squeezenet": 224
   };
 
@@ -202,46 +202,71 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future _pickImage(BuildContext context, ImageSource source) async {
     try {
-      final XFile? predImage = await ImagePicker().pickImage(
+      /*final XFile? predImage = await ImagePicker().pickImage(
           source: source,
           maxHeight: 768,
           maxWidth: 768
+      );*/
+      final List<XFile>? pickedImages = await ImagePicker().pickMultiImage(
+        maxHeight: 768,
+        maxWidth: 768,
       );
-      if (predImage == null) return;
-
-      // store image locally
-      Directory dir = await getApplicationDocumentsDirectory();
-      //final String dirPath = dir.path;
-      final String dirPath = dir.path + "${Platform.pathSeparator}files${Platform.pathSeparator}$version";
-      debugPrint(dirPath);
-      final Directory targetDir = Directory(dirPath);
-      final String filename = "${DateFormat('yyyyMMddkkmmss').format(DateTime.now())}.png";
-      // alternatively to checking if image was picked from gallery above, save a copy of the image always
-      String savePath = '$dirPath${Platform.pathSeparator}' + filename;
-
-      if (!await targetDir.exists()) {
-        await targetDir.create(recursive: true);
-      }
-
-      await predImage.saveTo(savePath);
+      if (pickedImages == null || pickedImages.isEmpty) return;
 
       setState(() {
         _isLoading = true;
       });
 
       int? modelDim = modelDims[modelID];
+      List<List<dynamic>?> allPredictions = [];
 
-      List? prediction = await imageModel!.getImagePredictionList(
-        File(predImage.path),
-        modelDim!,
-        modelDim,
-        mean: mean,
-        std: std,
-      );
-      prediction = applyTemperatureScaling(prediction);
-      prediction = applySoftmax(prediction);
-      List<Prediction> topFivePredictions = await _getTopFivePredictions(prediction);
-      box.add(ClassificationResult(topFivePredictions[0].species, savePath, DateTime.now(), topFivePredictions));
+      // prepare directory paths for storing images locally
+      Directory dir = await getApplicationDocumentsDirectory();
+      final String dirPath = dir.path + "${Platform.pathSeparator}files${Platform.pathSeparator}$version";
+      final Directory targetDir = Directory(dirPath);
+      if (!await targetDir.exists()) {
+        await targetDir.create(recursive: true);
+      }
+
+      int imageCounter = 0;
+      String firstPath = "";
+      for (XFile imageFile in pickedImages) {
+        String filename = DateFormat('yyyyMMddkkmmss').format(DateTime.now());
+        String savePath = '$dirPath${Platform.pathSeparator}' + filename;
+        // The first image keeps the default format, subsequent images are numbered
+        if (imageCounter == 0) {
+          savePath += ".png";
+          firstPath = savePath;
+        } else {
+          savePath += "_$imageCounter.png";
+        }
+        await imageFile.saveTo(savePath);
+
+        List? prediction = await imageModel!.getImagePredictionList(
+          File(imageFile.path),
+          modelDim!,
+          modelDim,
+          mean: mean,
+          std: std,
+        );
+        prediction = applyTemperatureScaling(prediction);
+        prediction = applySoftmax(prediction);
+        allPredictions.add(prediction);
+      }
+
+      // Calculate average softmax scores per class
+      List<double> averageSoftmaxScores = [];
+      int numPreds = allPredictions.length;
+      for (int i = 0; i < numClasses; i++){
+        double sum = 0.0;
+        for (int j = 0; j < numPreds; j++){
+          sum += allPredictions[j]?[i];
+        }
+        averageSoftmaxScores.add(sum / numPreds);
+      }
+      
+      List<Prediction> topFivePredictions = await _getTopFivePredictions(averageSoftmaxScores);
+      box.add(ClassificationResult(topFivePredictions[0].species, firstPath, DateTime.now(), topFivePredictions));
 
       //setState(() => this.image = File(predImage.path));  // unecessary?
       setState(() {
