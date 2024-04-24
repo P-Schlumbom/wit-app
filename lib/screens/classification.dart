@@ -42,6 +42,8 @@ class _Classification extends State<Classification>{
   //Image? image;
   final ScrollController controller = ScrollController();
 
+  Future<List<Image?>>? imagesFuture;
+
   String getTitle(){
     if (classificationResult.topFivePredictions[0].probability < PROB_THRESHOLD ){
       return "Unknown";
@@ -539,12 +541,36 @@ class _Classification extends State<Classification>{
     return null;
   }
 
+  Future<List<Image?>> _getImages(String firstImagePath) async {
+    /*
+    * Retrieve the first image, and other images in the series if they exist
+    * (suffixed by _i for the (i+1)th image)
+    * */
+    List<Image?> images = [];
+    int suffix = 0;
+
+    while (true) {
+      // generate the next image path
+      String currentPath = suffix == 0 ? firstImagePath : firstImagePath.replaceFirst('.png', '_$suffix.png');
+      var image = await _getImage(currentPath);
+
+      // Break if no other image found
+      if (image == null) break;
+
+      images.add(image);
+      suffix++;
+    }
+
+    return images;
+  }
+
   @override
   void initState() {
     super.initState();
     box = Hive.box('resultsBox');
     //debugPrint("${widget.classificationID}");
     classificationResult = box.getAt(widget.classificationID);  // for demo purposes, select first(?) entry for now.
+    imagesFuture = _getImages(classificationResult.imagePath);
     loadSpeciesData();
   }
 
@@ -560,18 +586,23 @@ class _Classification extends State<Classification>{
               physics: const ScrollPhysics(),
               shrinkWrap: true,
               children: [
-                FittedBox(
-                  child: FutureBuilder<Image?>(  // wait for image to be found/loaded and display icon in the meantime
-                    future: _getImage(classificationResult.imagePath),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        return snapshot.data ?? const Icon(Icons.image_not_supported_outlined);
-                      } else {
-                        return const Icon(Icons.image_not_supported_outlined);
-                      }
-                    },
-                  ),
-                  fit: BoxFit.fill,
+                FutureBuilder<List<Image?>>(
+                  future: imagesFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return PageView.builder(
+                        itemCount: snapshot.data!.length,
+                        itemBuilder: (context, index) {
+                          return FittedBox(
+                            child: snapshot.data![index],
+                            fit: BoxFit.fill,
+                          );
+                        },
+                      );
+                    } else {
+                      return const Icon(Icons.image_not_supported_outlined);
+                    }
+                  },
                 ),
                 Container(
                   padding: const EdgeInsets.all(32),
