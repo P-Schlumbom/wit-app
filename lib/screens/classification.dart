@@ -586,21 +586,42 @@ class _Classification extends State<Classification>{
               physics: const ScrollPhysics(),
               shrinkWrap: true,
               children: [
+                // original
+                /*FittedBox(
+                  child: FutureBuilder<Image?>(  // wait for image to be found/loaded and display icon in the meantime
+                    future: _getImage(classificationResult.imagePath),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return snapshot.data ?? const Icon(Icons.image_not_supported_outlined);
+                      } else {
+                        return const Icon(Icons.image_not_supported_outlined);
+                      }
+                    },
+                  ),
+                  fit: BoxFit.fill,
+                ),*/
+
                 FutureBuilder<List<Image?>>(
                   future: imagesFuture,
                   builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return PageView.builder(
-                        itemCount: snapshot.data!.length,
-                        itemBuilder: (context, index) {
-                          return FittedBox(
-                            child: snapshot.data![index],
-                            fit: BoxFit.fill,
-                          );
-                        },
-                      );
+                    if (snapshot.connectionState == ConnectionState.done) {
+                      if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                        debugPrint("${snapshot.data} , ${snapshot.data!.length}");
+                        return PageView.builder(
+                          itemCount: snapshot.data!.length,
+                          scrollDirection: Axis.horizontal,
+                          itemBuilder: (context, index) {
+                            debugPrint("loading image $index");
+                            return snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined);
+                          },
+                        );
+                      } else {
+                        return Center(child: Text("No images available"));
+                      }
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text("Error loading images"));
                     } else {
-                      return const Icon(Icons.image_not_supported_outlined);
+                      return Center(child: CircularProgressIndicator());
                     }
                   },
                 ),
