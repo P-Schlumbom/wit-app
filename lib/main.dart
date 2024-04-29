@@ -230,16 +230,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
       int imageCounter = 0;
       String firstPath = "";
+      String filename = DateFormat('yyyyMMddkkmmss').format(DateTime.now());
+      String coreSavePath = '$dirPath${Platform.pathSeparator}' + filename;
       for (XFile imageFile in pickedImages) {
-        String filename = DateFormat('yyyyMMddkkmmss').format(DateTime.now());
-        String savePath = '$dirPath${Platform.pathSeparator}' + filename;
+        String savePath = "";
         // The first image keeps the default format, subsequent images are numbered
         if (imageCounter == 0) {
-          savePath += ".png";
+          savePath = coreSavePath + ".png";
           firstPath = savePath;
         } else {
-          savePath += "_$imageCounter.png";
+          savePath = coreSavePath + "_$imageCounter.png";
         }
+        debugPrint("saving image to: $savePath");
         await imageFile.saveTo(savePath);
 
         List? prediction = await imageModel!.getImagePredictionList(
@@ -252,6 +254,8 @@ class _MyHomePageState extends State<MyHomePage> {
         prediction = applyTemperatureScaling(prediction);
         prediction = applySoftmax(prediction);
         allPredictions.add(prediction);
+
+        imageCounter++;
       }
 
       // Calculate average softmax scores per class

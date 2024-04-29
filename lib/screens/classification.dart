@@ -42,7 +42,8 @@ class _Classification extends State<Classification>{
   //Image? image;
   final ScrollController controller = ScrollController();
 
-  Future<List<Image?>>? imagesFuture;
+  late final Future<List<Image?>> imagesFuture;
+  late final Future<double> maxImageHeight;
 
   String getTitle(){
     if (classificationResult.topFivePredictions[0].probability < PROB_THRESHOLD ){
@@ -506,7 +507,7 @@ class _Classification extends State<Classification>{
 
     File standardFile = File(tgtPath);
     if (await standardFile.exists()) {
-      //debugPrint("Loaded image from $tgtPath");
+      debugPrint("Loaded image from $tgtPath");
       return Image.file(standardFile);
       //opacity: const AlwaysStoppedAnimation(0.5),);
     }
@@ -561,8 +562,77 @@ class _Classification extends State<Classification>{
       suffix++;
     }
 
+    debugPrint("$images length: ${images.length}");
     return images;
   }
+
+
+  double _calculateTargetHeight(List<Image?> images) {
+    double maxHeight = 0;
+
+    // Iterate through the list of images to find the tallest one
+    for (Image? image in images) {
+      if (image != null) {
+        double? currentImHeight = image.height;
+        if (currentImHeight! > maxHeight) {
+          maxHeight = currentImHeight;
+        }
+      }
+    }
+
+    // Calculate the target height based on the screen width
+    double screenWidth = MediaQuery.of(context).size.width;
+    double targetHeight = screenWidth * (maxHeight / screenWidth);
+    return targetHeight;
+  }
+
+
+  Widget buildImageGallery() {
+    return FutureBuilder<double?>(
+      future: maxImageHeight,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done && snapshot.hasData && snapshot.data != null) {
+          double targetHeight = snapshot.data!;
+          return SizedBox(
+            height: targetHeight,
+            child: FutureBuilder<List<Image?>>(
+              future: imagesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                    debugPrint("${snapshot.data} , ${snapshot.data!.length}");
+                    return PageView.builder(
+                      itemCount: snapshot.data!.length,
+                      scrollDirection: Axis.horizontal,
+                      itemBuilder: (context, index) {
+                        debugPrint("loading image $index");
+                        return FittedBox(
+                          child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined),
+                          fit: BoxFit.cover,
+                        );
+                      },
+                    );
+                  } else {
+                    return Center(child: Text("No images available"));
+                  }
+                } else if (snapshot.hasError) {
+                  return Center(child: Text("Error loading images"));
+                } else {
+                  return Center(child: CircularProgressIndicator());
+                }
+              },
+            ),
+          );
+        } else if (snapshot.hasError) {
+          return Center(child: Text("Error calculating max image height"));
+        } else {
+          return Center(child: CircularProgressIndicator());
+        }
+      },
+    );
+  }
+
+
 
   @override
   void initState() {
@@ -571,6 +641,9 @@ class _Classification extends State<Classification>{
     //debugPrint("${widget.classificationID}");
     classificationResult = box.getAt(widget.classificationID);  // for demo purposes, select first(?) entry for now.
     imagesFuture = _getImages(classificationResult.imagePath);
+    maxImageHeight = _calculateTargetHeight(imagesFuture)
+    //maxImageHeight = imagesFuture.then((images) => _calculateTargetHeight(images));
+    //imagesFuture.then((images) => {maxImageHeight = _calculateTargetHeight(images)});
     loadSpeciesData();
   }
 
@@ -601,30 +674,40 @@ class _Classification extends State<Classification>{
                   fit: BoxFit.fill,
                 ),*/
 
-                FutureBuilder<List<Image?>>(
-                  future: imagesFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.done) {
-                      if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                        debugPrint("${snapshot.data} , ${snapshot.data!.length}");
-                        return PageView.builder(
-                          itemCount: snapshot.data!.length,
-                          scrollDirection: Axis.horizontal,
-                          itemBuilder: (context, index) {
-                            debugPrint("loading image $index");
-                            return snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined);
-                          },
-                        );
+                /*SizedBox(
+                  height: maxImageHeight,
+                  //fit: BoxFit.fill,
+                  child: FutureBuilder<List<Image?>>(
+                    future: imagesFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.done) {
+                        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                          debugPrint("${snapshot.data} , ${snapshot.data!.length}");
+                          return PageView.builder(
+                            itemCount: snapshot.data!.length,
+                            scrollDirection: Axis.horizontal,
+                            itemBuilder: (context, index) {
+                              debugPrint("loading image $index");
+                              //return snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined);
+                              return FittedBox(child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), fit: BoxFit.cover);
+                              //return SizedBox(child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), width: 300,);
+                              //return Image.network(snapshot.data![index],fit: BoxFit.contain,);
+                            },
+                          );
+                        } else {
+                          return Center(child: Text("No images available"));
+                        }
+                      } else if (snapshot.hasError) {
+                        return Center(child: Text("Error loading images"));
                       } else {
-                        return Center(child: Text("No images available"));
+                        return Center(child: CircularProgressIndicator());
                       }
-                    } else if (snapshot.hasError) {
-                      return Center(child: Text("Error loading images"));
-                    } else {
-                      return Center(child: CircularProgressIndicator());
-                    }
-                  },
-                ),
+                    },
+                  ),
+                ),*/
+
+                buildImageGallery(),
+
                 Container(
                   padding: const EdgeInsets.all(32),
                   child: Row(
