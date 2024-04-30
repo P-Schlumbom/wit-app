@@ -44,6 +44,7 @@ class _Classification extends State<Classification>{
 
   late final Future<List<Image?>> imagesFuture;
   late final Future<double> maxImageHeight;
+  double? testHeight;
 
   String getTitle(){
     if (classificationResult.topFivePredictions[0].probability < PROB_THRESHOLD ){
@@ -562,7 +563,11 @@ class _Classification extends State<Classification>{
       suffix++;
     }
 
+    setState(() {
+      testHeight = images[0]?.height;
+    });
     debugPrint("$images length: ${images.length}");
+    debugPrint("first image height: $testHeight");
     return images;
   }
 
@@ -632,7 +637,17 @@ class _Classification extends State<Classification>{
     );
   }
 
+  Future<double?> getImHeight() async {
+    //Image imageHeight = await decodeImageFromList(File(classificationResult.imagePath).readAsBytesSync());
+    Image testIm = Image.file(File(classificationResult.imagePath));
+    debugPrint("first image height: ${testIm.height}");
+    return testIm.height;
+  }
 
+  void setVars() async {
+    double? testImHeight = (await Future.wait([getImHeight()]))[0];
+    debugPrint("received height value $testImHeight");
+  }
 
   @override
   void initState() {
@@ -641,7 +656,10 @@ class _Classification extends State<Classification>{
     //debugPrint("${widget.classificationID}");
     classificationResult = box.getAt(widget.classificationID);  // for demo purposes, select first(?) entry for now.
     imagesFuture = _getImages(classificationResult.imagePath);
-    maxImageHeight = _calculateTargetHeight(imagesFuture)
+    //maxImageHeight = _calculateTargetHeight(imagesFuture);
+
+    setVars();
+
     //maxImageHeight = imagesFuture.then((images) => _calculateTargetHeight(images));
     //imagesFuture.then((images) => {maxImageHeight = _calculateTargetHeight(images)});
     loadSpeciesData();
@@ -674,8 +692,11 @@ class _Classification extends State<Classification>{
                   fit: BoxFit.fill,
                 ),*/
 
-                /*SizedBox(
-                  height: maxImageHeight,
+                SizedBox(
+                  //height: maxImageHeight,
+                  //height: testHeight ?? 0,
+                  //height: 300,
+                  height: MediaQuery.of(context).size.width,
                   //fit: BoxFit.fill,
                   child: FutureBuilder<List<Image?>>(
                     future: imagesFuture,
@@ -688,25 +709,36 @@ class _Classification extends State<Classification>{
                             scrollDirection: Axis.horizontal,
                             itemBuilder: (context, index) {
                               debugPrint("loading image $index");
+                              debugPrint("loaded image height: ${snapshot.data![index]?.height}");
                               //return snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined);
-                              return FittedBox(child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), fit: BoxFit.cover);
+                              /*return FittedBox(
+                                  child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined),
+                                  fit: BoxFit.cover
+                              );*/
+                              return ClipRRect(
+                                borderRadius: const BorderRadius.only(topRight: Radius.circular(25), bottomRight: Radius.circular(25)), // Set your desired border radius
+                                child: FittedBox(
+                                    child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined),
+                                    fit: BoxFit.cover
+                                ),
+                              );
                               //return SizedBox(child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), width: 300,);
                               //return Image.network(snapshot.data![index],fit: BoxFit.contain,);
                             },
                           );
                         } else {
-                          return Center(child: Text("No images available"));
+                          return const Center(child: Text("No images available"));
                         }
                       } else if (snapshot.hasError) {
-                        return Center(child: Text("Error loading images"));
+                        return const Center(child: Text("Error loading images"));
                       } else {
-                        return Center(child: CircularProgressIndicator());
+                        return const Center(child: CircularProgressIndicator());
                       }
                     },
                   ),
-                ),*/
+                ),
 
-                buildImageGallery(),
+                //buildImageGallery(),
 
                 Container(
                   padding: const EdgeInsets.all(32),
