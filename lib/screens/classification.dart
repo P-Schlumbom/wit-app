@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import 'package:card_swiper/card_swiper.dart';
 
 import 'package:wit_app/classes/classification_result.dart';
 import 'package:wit_app/utils/custom_expansion_tile.dart';
@@ -17,6 +18,53 @@ import 'package:wit_app/utils/custom_expansion_tile.dart';
 import 'package:wit_app/globals.dart';
 
 
+class CardPage extends StatelessWidget {
+  final int index;
+
+  const CardPage({Key? key, required this.index}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Positioned(
+          left: -(MediaQuery.of(context).size.width - 50) * (1 - index),
+          child: const CardWidget(color: Colors.blue), // Current card
+        ),
+        Positioned(
+          left: MediaQuery.of(context).size.width - 50,
+          child: const CardWidget(color: Colors.red), // Next card
+        ),
+      ],
+    );
+  }
+}
+
+class CardWidget extends StatelessWidget {
+  final Color color;
+
+  const CardWidget({Key? key, required this.color}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: MediaQuery.of(context).size.width - 100,
+      height: 200,
+      margin: const EdgeInsets.symmetric(horizontal: 25),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: const Center(
+        child: Text(
+          "Card",
+          style: TextStyle(fontSize: 24, color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
 
 class Classification extends StatefulWidget {
   final int classificationID;
@@ -668,6 +716,7 @@ class _Classification extends State<Classification>{
   @override
   Widget build(BuildContext context){
     return Scaffold(
+      //backgroundColor: Colors.teal,
         appBar: AppBar(
           title: Text(classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? getCommonName(classificationResult.prediction, engNames, mriNames) : "Unknown"),
         ),
@@ -692,7 +741,7 @@ class _Classification extends State<Classification>{
                   fit: BoxFit.fill,
                 ),*/
 
-                SizedBox(
+                /*SizedBox(
                   //height: maxImageHeight,
                   //height: testHeight ?? 0,
                   //height: 300,
@@ -707,6 +756,7 @@ class _Classification extends State<Classification>{
                           return PageView.builder(
                             itemCount: snapshot.data!.length,
                             scrollDirection: Axis.horizontal,
+                            padEnds: false,
                             itemBuilder: (context, index) {
                               debugPrint("loading image $index");
                               debugPrint("loaded image height: ${snapshot.data![index]?.height}");
@@ -716,7 +766,7 @@ class _Classification extends State<Classification>{
                                   fit: BoxFit.cover
                               );*/
                               return ClipRRect(
-                                borderRadius: const BorderRadius.only(topRight: Radius.circular(25), bottomRight: Radius.circular(25)), // Set your desired border radius
+                                borderRadius: BorderRadius.circular(25), //const BorderRadius.only(topRight: Radius.circular(25), bottomRight: Radius.circular(25)), // Set your desired border radius
                                 child: FittedBox(
                                     child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined),
                                     fit: BoxFit.cover
@@ -725,6 +775,58 @@ class _Classification extends State<Classification>{
                               //return SizedBox(child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), width: 300,);
                               //return Image.network(snapshot.data![index],fit: BoxFit.contain,);
                             },
+                            controller: PageController(
+                              viewportFraction: 0.95,
+                              initialPage: 0
+                            ),
+                          );
+                        } else {
+                          return const Center(child: Text("No images available"));
+                        }
+                      } else if (snapshot.hasError) {
+                        return const Center(child: Text("Error loading images"));
+                      } else {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                    },
+                  ),
+                ),*/
+
+                //buildImageGallery(),
+
+                SizedBox(
+                  height: MediaQuery.of(context).size.width,
+                  child: FutureBuilder<List<Image?>>(
+                    future: imagesFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.done) {
+                        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                          debugPrint("${snapshot.data} , ${snapshot.data!.length}");
+                          return Swiper(
+                            itemCount: snapshot.data!.length,
+                            itemWidth: MediaQuery.of(context).size.width*0.95,
+                            scrollDirection: Axis.horizontal,
+                            itemBuilder: (context, index) {
+                              debugPrint("loading image $index");
+                              debugPrint("loaded image height: ${snapshot.data![index]?.height}");
+                              //return snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined);
+                              /*return FittedBox(
+                                  child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined),
+                                  fit: BoxFit.cover
+                              );*/
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(65), //const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)), // Set your desired border radius
+                                child: FittedBox(
+                                    child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined),
+                                    fit: BoxFit.cover
+                                ),
+                              );
+                              //return SizedBox(child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), width: 300,);
+                              //return Image.network(snapshot.data![index],fit: BoxFit.contain,);
+                            },
+                            layout: SwiperLayout.STACK,
+                            pagination: SwiperPagination(margin: EdgeInsets.all(10.0)),
+                            loop: false,
                           );
                         } else {
                           return const Center(child: Text("No images available"));
@@ -737,8 +839,6 @@ class _Classification extends State<Classification>{
                     },
                   ),
                 ),
-
-                //buildImageGallery(),
 
                 Container(
                   padding: const EdgeInsets.all(32),

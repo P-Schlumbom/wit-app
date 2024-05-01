@@ -51,6 +51,7 @@ dependencies:
   pytorch_mobile:
   flutter_launcher_icons: #^0.9.3
   url_launcher:
+  card_swiper: ^3.0.0
 
 dev_dependencies:
   flutter_test:

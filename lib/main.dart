@@ -64,8 +64,17 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'WIT app',
       theme: ThemeData(
-        primarySwatch: Colors.teal,
+        //primarySwatch: Colors.teal,
+        //primaryColor: Colors.teal,
         scaffoldBackgroundColor: const Color(0xFFeff6e0),
+        colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.teal,
+          //primary: Colors.teal,
+        ),
+        appBarTheme: const AppBarTheme(
+          color: const Color(0xFFeff6e0), //Colors.teal,
+          foregroundColor: Colors.teal, //const Color(0xFFeff6e0),
+        )
         /*textTheme: TextTheme(
           bodyLarge: TextStyle(color: Colors.indigo.shade900),
           bodyMedium: TextStyle(color: Colors.indigo.shade900),
