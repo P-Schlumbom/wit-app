@@ -66,6 +66,95 @@ class FullScreenImage extends StatelessWidget {
   }
 }
 
+class FullScreenSwiper extends StatefulWidget {
+  final Future<List<Image?>> images;
+
+  FullScreenSwiper({Key? key, required this.images}) : super(key: key);
+
+  @override
+  _FullScreenSwiper createState() => _FullScreenSwiper();
+
+  void updateCurrentIndex(int index) {}
+}
+
+class _FullScreenSwiper extends State<FullScreenSwiper>{
+  int currentIndex = 0;
+  late final Future<List<Image?>> images;
+
+  @override
+  void initState() {
+    super.initState();
+    images = widget.images;
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        body: FutureBuilder<List<Image?>>(
+          future: images,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done) {
+              if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                return Swiper(
+                  itemCount: snapshot.data!.length,
+                  index: currentIndex,
+                  itemWidth: MediaQuery.of(context).size.width*0.95,
+                  scrollDirection: Axis.horizontal,
+                  itemBuilder: (context, index) {
+                    currentIndex = index;
+                    return Center(
+                        child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined)
+                    );
+                  },
+                  layout: SwiperLayout.STACK,
+                  pagination: const SwiperPagination(margin: EdgeInsets.all(10.0)),
+                  loop: false,
+                  onTap: (index) {
+                    Navigator.pop(context);
+                  },
+                );
+                /*return Swiper(
+                  itemCount: snapshot.data!.length,
+                  itemWidth: MediaQuery.of(context).size.width*0.95,
+                  scrollDirection: Axis.horizontal,
+                  itemBuilder: (context, index) {
+                    return imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index);
+                    /*return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => FullScreenImage(image: imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index), index: index,)));
+                                },
+                                child: imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index),
+                              );*/
+                  },
+                  layout: SwiperLayout.STACK,
+                  pagination: const SwiperPagination(margin: EdgeInsets.all(10.0)),
+                  loop: false,
+                );*/
+              } else {
+                return const Center(child: Text("No images available"));
+              }
+            } else if (snapshot.hasError) {
+              return const Center(child: Text("Error loading images"));
+            } else {
+              return const Center(child: CircularProgressIndicator());
+            }
+          },
+        ),
+        
+    );
+  }
+  
+  void updateCurrentIndex(int index){
+    setState(() {
+      currentIndex = index;
+    });
+  }
+  
+  int getCurrentIndex(){
+    return currentIndex;
+  }
+}
+
 class Classification extends StatefulWidget {
   final int classificationID;
   const Classification({Key? key, required this.classificationID}) : super(key: key);
@@ -92,7 +181,7 @@ class _Classification extends State<Classification>{
 
   late final Future<List<Image?>> imagesFuture;
   late final Future<double> maxImageHeight;
-  double? testHeight;
+  late final FullScreenSwiper fullScreenSwiper;
 
   String getTitle(){
     if (classificationResult.topFivePredictions[0].probability < PROB_THRESHOLD ){
@@ -632,11 +721,7 @@ class _Classification extends State<Classification>{
       suffix++;
     }
 
-    setState(() {
-      testHeight = images[0]?.height;
-    });
     debugPrint("$images length: ${images.length}");
-    debugPrint("first image height: $testHeight");
     return images;
   }
 
@@ -648,10 +733,7 @@ class _Classification extends State<Classification>{
     //debugPrint("${widget.classificationID}");
     classificationResult = box.getAt(widget.classificationID);  // for demo purposes, select first(?) entry for now.
     imagesFuture = _getImages(classificationResult.imagePath);
-    //maxImageHeight = _calculateTargetHeight(imagesFuture);
-
-    //maxImageHeight = imagesFuture.then((images) => _calculateTargetHeight(images));
-    //imagesFuture.then((images) => {maxImageHeight = _calculateTargetHeight(images)});
+    fullScreenSwiper = FullScreenSwiper(images: imagesFuture);
     loadSpeciesData();
   }
 
@@ -694,11 +776,21 @@ class _Classification extends State<Classification>{
                             itemWidth: MediaQuery.of(context).size.width*0.95,
                             scrollDirection: Axis.horizontal,
                             itemBuilder: (context, index) {
+                              fullScreenSwiper.updateCurrentIndex(index);
                               return imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index);
+                              /*return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => FullScreenImage(image: imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index), index: index,)));
+                                },
+                                child: imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index),
+                              );*/
                             },
                             layout: SwiperLayout.STACK,
                             pagination: const SwiperPagination(margin: EdgeInsets.all(10.0)),
                             loop: false,
+                            onTap: (index) {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) {fullScreenSwiper}))
+                            },
                           );
                         } else {
                           return const Center(child: Text("No images available"));
