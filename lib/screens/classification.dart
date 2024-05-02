@@ -1,6 +1,7 @@
 //import 'dart:html';
 
 import 'package:camera/camera.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
@@ -18,49 +19,48 @@ import 'package:wit_app/utils/custom_expansion_tile.dart';
 import 'package:wit_app/globals.dart';
 
 
-class CardPage extends StatelessWidget {
-  final int index;
+class CustomImageTransition extends StatelessWidget {
+  final Widget child;
 
-  const CardPage({Key? key, required this.index}) : super(key: key);
+  CustomImageTransition({required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Positioned(
-          left: -(MediaQuery.of(context).size.width - 50) * (1 - index),
-          child: const CardWidget(color: Colors.blue), // Current card
-        ),
-        Positioned(
-          left: MediaQuery.of(context).size.width - 50,
-          child: const CardWidget(color: Colors.red), // Next card
-        ),
-      ],
+    return AnimatedSwitcher(
+      duration: Duration(milliseconds: 250),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return ScaleTransition(
+          scale: animation,
+          child: child,
+        );
+      },
+      child: child,
     );
   }
 }
 
-class CardWidget extends StatelessWidget {
-  final Color color;
+class FullScreenImage extends StatelessWidget {
+  final Widget image;
+  final int index;
 
-  const CardWidget({Key? key, required this.color}) : super(key: key);
+  FullScreenImage({required this.image, required this.index});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: MediaQuery.of(context).size.width - 100,
-      height: 200,
-      margin: const EdgeInsets.symmetric(horizontal: 25),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: const Center(
-        child: Text(
-          "Card",
-          style: TextStyle(fontSize: 24, color: Colors.white),
-        ),
+    return Scaffold(
+      body: GestureDetector(
+        child: Center(child: image),
+        /*child: Center(
+          child: Hero(
+            tag: 'imageHero_$index',
+            child: CustomImageTransition(
+              child: image,
+            ),
+          ),
+        ),*/
+        onTap: () {
+          Navigator.pop(context);
+        },
       ),
     );
   }
@@ -430,6 +430,27 @@ class _Classification extends State<Classification>{
     );
   }
 
+  ClipRRect imageDisplayTile(Widget image, int index) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(65), //const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)), // Set your desired border radius
+      child: FittedBox(
+          //child: image,
+          child: GestureDetector(
+            child: ClipRRect(borderRadius: BorderRadius.circular(65), child: image,),
+            /*child: Hero(
+              tag: 'imageHero_$index',
+              //child: image,
+              child: ClipRRect(borderRadius: BorderRadius.circular(65), child: image,),
+            ),*/
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) {return FullScreenImage(image: image, index: index,);}));
+            },
+          ),
+          fit: BoxFit.cover,
+      ),
+    );
+  }
+
   Future loadSpeciesData() async {
     stringID = classificationResult.topFivePredictions[0].index.toString();
     //engNames = List<String>.from(speciesNamesMap[stringID]["eng"]);
@@ -620,83 +641,6 @@ class _Classification extends State<Classification>{
   }
 
 
-  double _calculateTargetHeight(List<Image?> images) {
-    double maxHeight = 0;
-
-    // Iterate through the list of images to find the tallest one
-    for (Image? image in images) {
-      if (image != null) {
-        double? currentImHeight = image.height;
-        if (currentImHeight! > maxHeight) {
-          maxHeight = currentImHeight;
-        }
-      }
-    }
-
-    // Calculate the target height based on the screen width
-    double screenWidth = MediaQuery.of(context).size.width;
-    double targetHeight = screenWidth * (maxHeight / screenWidth);
-    return targetHeight;
-  }
-
-
-  Widget buildImageGallery() {
-    return FutureBuilder<double?>(
-      future: maxImageHeight,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done && snapshot.hasData && snapshot.data != null) {
-          double targetHeight = snapshot.data!;
-          return SizedBox(
-            height: targetHeight,
-            child: FutureBuilder<List<Image?>>(
-              future: imagesFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                    debugPrint("${snapshot.data} , ${snapshot.data!.length}");
-                    return PageView.builder(
-                      itemCount: snapshot.data!.length,
-                      scrollDirection: Axis.horizontal,
-                      itemBuilder: (context, index) {
-                        debugPrint("loading image $index");
-                        return FittedBox(
-                          child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined),
-                          fit: BoxFit.cover,
-                        );
-                      },
-                    );
-                  } else {
-                    return Center(child: Text("No images available"));
-                  }
-                } else if (snapshot.hasError) {
-                  return Center(child: Text("Error loading images"));
-                } else {
-                  return Center(child: CircularProgressIndicator());
-                }
-              },
-            ),
-          );
-        } else if (snapshot.hasError) {
-          return Center(child: Text("Error calculating max image height"));
-        } else {
-          return Center(child: CircularProgressIndicator());
-        }
-      },
-    );
-  }
-
-  Future<double?> getImHeight() async {
-    //Image imageHeight = await decodeImageFromList(File(classificationResult.imagePath).readAsBytesSync());
-    Image testIm = Image.file(File(classificationResult.imagePath));
-    debugPrint("first image height: ${testIm.height}");
-    return testIm.height;
-  }
-
-  void setVars() async {
-    double? testImHeight = (await Future.wait([getImHeight()]))[0];
-    debugPrint("received height value $testImHeight");
-  }
-
   @override
   void initState() {
     super.initState();
@@ -705,8 +649,6 @@ class _Classification extends State<Classification>{
     classificationResult = box.getAt(widget.classificationID);  // for demo purposes, select first(?) entry for now.
     imagesFuture = _getImages(classificationResult.imagePath);
     //maxImageHeight = _calculateTargetHeight(imagesFuture);
-
-    setVars();
 
     //maxImageHeight = imagesFuture.then((images) => _calculateTargetHeight(images));
     //imagesFuture.then((images) => {maxImageHeight = _calculateTargetHeight(images)});
@@ -740,60 +682,6 @@ class _Classification extends State<Classification>{
                   ),
                   fit: BoxFit.fill,
                 ),*/
-
-                /*SizedBox(
-                  //height: maxImageHeight,
-                  //height: testHeight ?? 0,
-                  //height: 300,
-                  height: MediaQuery.of(context).size.width,
-                  //fit: BoxFit.fill,
-                  child: FutureBuilder<List<Image?>>(
-                    future: imagesFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done) {
-                        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                          debugPrint("${snapshot.data} , ${snapshot.data!.length}");
-                          return PageView.builder(
-                            itemCount: snapshot.data!.length,
-                            scrollDirection: Axis.horizontal,
-                            padEnds: false,
-                            itemBuilder: (context, index) {
-                              debugPrint("loading image $index");
-                              debugPrint("loaded image height: ${snapshot.data![index]?.height}");
-                              //return snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined);
-                              /*return FittedBox(
-                                  child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined),
-                                  fit: BoxFit.cover
-                              );*/
-                              return ClipRRect(
-                                borderRadius: BorderRadius.circular(25), //const BorderRadius.only(topRight: Radius.circular(25), bottomRight: Radius.circular(25)), // Set your desired border radius
-                                child: FittedBox(
-                                    child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined),
-                                    fit: BoxFit.cover
-                                ),
-                              );
-                              //return SizedBox(child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), width: 300,);
-                              //return Image.network(snapshot.data![index],fit: BoxFit.contain,);
-                            },
-                            controller: PageController(
-                              viewportFraction: 0.95,
-                              initialPage: 0
-                            ),
-                          );
-                        } else {
-                          return const Center(child: Text("No images available"));
-                        }
-                      } else if (snapshot.hasError) {
-                        return const Center(child: Text("Error loading images"));
-                      } else {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                    },
-                  ),
-                ),*/
-
-                //buildImageGallery(),
-
                 SizedBox(
                   height: MediaQuery.of(context).size.width,
                   child: FutureBuilder<List<Image?>>(
@@ -801,31 +689,15 @@ class _Classification extends State<Classification>{
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.done) {
                         if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                          debugPrint("${snapshot.data} , ${snapshot.data!.length}");
                           return Swiper(
                             itemCount: snapshot.data!.length,
                             itemWidth: MediaQuery.of(context).size.width*0.95,
                             scrollDirection: Axis.horizontal,
                             itemBuilder: (context, index) {
-                              debugPrint("loading image $index");
-                              debugPrint("loaded image height: ${snapshot.data![index]?.height}");
-                              //return snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined);
-                              /*return FittedBox(
-                                  child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined),
-                                  fit: BoxFit.cover
-                              );*/
-                              return ClipRRect(
-                                borderRadius: BorderRadius.circular(65), //const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)), // Set your desired border radius
-                                child: FittedBox(
-                                    child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined),
-                                    fit: BoxFit.cover
-                                ),
-                              );
-                              //return SizedBox(child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), width: 300,);
-                              //return Image.network(snapshot.data![index],fit: BoxFit.contain,);
+                              return imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index);
                             },
                             layout: SwiperLayout.STACK,
-                            pagination: SwiperPagination(margin: EdgeInsets.all(10.0)),
+                            pagination: const SwiperPagination(margin: EdgeInsets.all(10.0)),
                             loop: false,
                           );
                         } else {
