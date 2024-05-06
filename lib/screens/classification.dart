@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
@@ -15,6 +16,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'package:card_swiper/card_swiper.dart';
 
 import 'package:wit_app/classes/classification_result.dart';
+import 'package:wit_app/classes/prediction.dart';
 import 'package:wit_app/utils/custom_expansion_tile.dart';
 
 import 'package:wit_app/globals.dart';
@@ -192,7 +194,8 @@ class Classification extends StatefulWidget {
 
 class _Classification extends State<Classification>{
   late final Box box;
-  late final ClassificationResult classificationResult;
+  late final List<ClassificationResult> classificationResults;
+  late final List<Prediction> averageTopFive;
   late final String stringID;
   late final String speciesName;
   late final List<String> engNames;
@@ -214,15 +217,15 @@ class _Classification extends State<Classification>{
   ValueNotifier<int> currentIndexNotifier = ValueNotifier<int>(0);
 
   String getTitle(){
-    if (classificationResult.topFivePredictions[0].probability < PROB_THRESHOLD ){
+    if (classificationResults[0].topFivePredictions[0].probability < PROB_THRESHOLD ){
       return "Unknown";
     }
-    String returnText = classificationResult.prediction;
-    List<String> engNames = classificationResult.topFivePredictions[0].nameData.engNames.isEmpty ? [""] : classificationResult.topFivePredictions[0].nameData.engNames;
-    List<String> mriNames = classificationResult.topFivePredictions[0].nameData.mriNames.isEmpty ? [""] : classificationResult.topFivePredictions[0].nameData.mriNames;
-    //String return_text = "${getCommonName(classificationResult.prediction, engNames, mriNames)}";
+    String returnText = classificationResults[0].prediction;
+    List<String> engNames = classificationResults[0].topFivePredictions[0].nameData.engNames.isEmpty ? [""] : classificationResults[0].topFivePredictions[0].nameData.engNames;
+    List<String> mriNames = classificationResults[0].topFivePredictions[0].nameData.mriNames.isEmpty ? [""] : classificationResults[0].topFivePredictions[0].nameData.mriNames;
+    //String return_text = "${getCommonName(classificationResult[0].prediction, engNames, mriNames)}";
     if (engNames[0] != "") {
-      returnText = returnText + " | " + classificationResult.topFivePredictions[0].nameData.engNames[0];
+      returnText = returnText + " | " + classificationResults[0].topFivePredictions[0].nameData.engNames[0];
     }
     if (mriNames[0] != "" && mriNames[0] != engNames[0]) {
       returnText = returnText + " | " + mriNames[0];
@@ -382,7 +385,7 @@ class _Classification extends State<Classification>{
 
   Future<RichText> createWikipediaText() async {
     // return nothing if the entry is deprecated or there isn't enough confidence for a prediction
-    if (deprecatedEntry == true || classificationResult.topFivePredictions[0].probability < PROB_THRESHOLD){
+    if (deprecatedEntry == true || classificationResults[0].topFivePredictions[0].probability < PROB_THRESHOLD){
       return RichText(text: const TextSpan(text: ""));
     }
 
@@ -543,9 +546,9 @@ class _Classification extends State<Classification>{
     String numberString = "${index + 1}. ";
     return ListTile(
       leading: Text(numberString),
-      title: SelectableText(classificationResult.topFivePredictions[index].species),
-      trailing: Text((classificationResult.topFivePredictions[index].probability).toStringAsPrecision(3)),
-      textColor: const Color(0xFFeff6e0).withOpacity(classificationResult.topFivePredictions[index].probability / 4 + 0.75),
+      title: SelectableText(classificationResults[0].topFivePredictions[index].species),
+      trailing: Text((classificationResults[0].topFivePredictions[index].probability).toStringAsPrecision(3)),
+      textColor: const Color(0xFFeff6e0).withOpacity(classificationResults[0].topFivePredictions[index].probability / 4 + 0.75),
     );
   }
 
@@ -571,23 +574,23 @@ class _Classification extends State<Classification>{
   }
 
   Future loadSpeciesData() async {
-    stringID = classificationResult.topFivePredictions[0].index.toString();
+    stringID = classificationResults[0].topFivePredictions[0].index.toString();
     //engNames = List<String>.from(speciesNamesMap[stringID]["eng"]);
     //mriNames = List<String>.from(speciesNamesMap[stringID]["mri"]);
-    engNames = classificationResult.topFivePredictions[0].nameData.engNames;
-    mriNames = classificationResult.topFivePredictions[0].nameData.mriNames;
-    bool acceptPred = classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD;  // no need to display notifications if confidence is too low
+    engNames = classificationResults[0].topFivePredictions[0].nameData.engNames;
+    mriNames = classificationResults[0].topFivePredictions[0].nameData.mriNames;
+    bool acceptPred = classificationResults[0].topFivePredictions[0].probability >= PROB_THRESHOLD;  // no need to display notifications if confidence is too low
     // set plant status
     List<String> topFiveIndices = [
-      classificationResult.topFivePredictions[0].index.toString(),
-      classificationResult.topFivePredictions[1].index.toString(),
-      classificationResult.topFivePredictions[2].index.toString(),
-      classificationResult.topFivePredictions[3].index.toString(),
-      classificationResult.topFivePredictions[4].index.toString(),
+      classificationResults[0].topFivePredictions[0].index.toString(),
+      classificationResults[0].topFivePredictions[1].index.toString(),
+      classificationResults[0].topFivePredictions[2].index.toString(),
+      classificationResults[0].topFivePredictions[3].index.toString(),
+      classificationResults[0].topFivePredictions[4].index.toString(),
     ];
 
     // check if this information was saved with the current database
-    String imagePath = classificationResult.imagePath;
+    String imagePath = classificationResults[0].imagePath;
     List<String> pathComponents = path.split(imagePath);
     String usedVersion = pathComponents[pathComponents.length - 2];
     //debugPrint("getting last element of split...");
@@ -731,24 +734,23 @@ class _Classification extends State<Classification>{
     return null;
   }
 
-  Future<List<Image?>> _getImages(String firstImagePath) async {
+  Future<List<Image?>> _getImages() async {
     /*
-    * Retrieve the first image, and other images in the series if they exist
-    * (suffixed by _i for the (i+1)th image)
+    * Retrieve images from the box entry. If the entry has more than 1 entries, 
+    * the first entry is the summary entry and the image it's pointing to is 
+    * skipped.
     * */
+    int numIms = classificationResults.length;
+    if (numIms == 1){
+      var image = await _getImage(classificationResults[0].imagePath);
+      return [image];
+    }
+
     List<Image?> images = [];
-    int suffix = 0;
-
-    while (true) {
-      // generate the next image path
-      String currentPath = suffix == 0 ? firstImagePath : firstImagePath.replaceFirst('.png', '_$suffix.png');
-      var image = await _getImage(currentPath);
-
-      // Break if no other image found
-      if (image == null) break;
-
+    
+    for (int i = 1; i<numIms; i++){
+      var image = await _getImage(classificationResults[i].imagePath);
       images.add(image);
-      suffix++;
     }
 
     debugPrint("$images length: ${images.length}");
@@ -760,9 +762,14 @@ class _Classification extends State<Classification>{
   void initState() {
     super.initState();
     box = Hive.box('resultsBox');
-    //debugPrint("${widget.classificationID}");
-    classificationResult = box.getAt(widget.classificationID);  // for demo purposes, select first(?) entry for now.
-    imagesFuture = _getImages(classificationResult.imagePath);
+
+    var boxResult = box.getAt(widget.classificationID);
+    if (boxResult is! List<ClassificationResult>) {
+      boxResult = [boxResult as ClassificationResult];
+      box.put(widget.classificationID, boxResult);  // if it's an old entry, replace with a list of size 1
+    }
+    classificationResults = boxResult;
+    imagesFuture = _getImages();
     swiperController = SwiperController();
     fullScreenSwiper = FullScreenSwiper(
       images: imagesFuture,
@@ -778,7 +785,7 @@ class _Classification extends State<Classification>{
     return Scaffold(
       //backgroundColor: Colors.teal,
         appBar: AppBar(
-          title: Text(classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? getCommonName(classificationResult.prediction, engNames, mriNames) : "Unknown"),
+          title: Text(classificationResults[0].topFivePredictions[0].probability >= PROB_THRESHOLD ? getCommonName(classificationResults[0].prediction, engNames, mriNames) : "Unknown"),
         ),
         body: SingleChildScrollView(
             child: ListView(
@@ -789,7 +796,7 @@ class _Classification extends State<Classification>{
                 // original
                 /*FittedBox(
                   child: FutureBuilder<Image?>(  // wait for image to be found/loaded and display icon in the meantime
-                    future: _getImage(classificationResult.imagePath),
+                    future: _getImage(classificationResult[0].imagePath),
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
                         return snapshot.data ?? const Icon(Icons.image_not_supported_outlined);
@@ -861,7 +868,7 @@ class _Classification extends State<Classification>{
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            "Prediction probability: ${(classificationResult.topFivePredictions[0].probability).toStringAsPrecision(3)}",
+                            "Prediction probability: ${(classificationResults[0].topFivePredictions[0].probability).toStringAsPrecision(3)}",
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16.0,
@@ -893,10 +900,10 @@ class _Classification extends State<Classification>{
                           const SizedBox(height: 12),
                           FutureBuilder<RichText>(
                             future: createNameDetailsText(
-                                classificationResult.prediction,
+                                classificationResults[0].prediction,
                                 engNames,
                                 mriNames,
-                                classificationResult.topFivePredictions[0].probability
+                                classificationResults[0].topFivePredictions[0].probability
                             ),
                             builder: (context, snapshot){
                               if (snapshot.hasData) {
@@ -1029,14 +1036,14 @@ class _Classification extends State<Classification>{
                           ),
                           /*const SizedBox(height: 12),
                           Text(
-                            classificationResult.imagePath,
+                            classificationResult[0].imagePath,
                             style: TextStyle(
                               color: Colors.grey[500],
                             ),
                           ),*/
                           const SizedBox(height: 12),
                           Text(
-                            "This image was taken on ${DateFormat('yyyy-MM-dd - kk:mm').format(classificationResult.timestamp)}",
+                            "This image was taken on ${DateFormat('yyyy-MM-dd - kk:mm').format(classificationResults[0].timestamp)}",
                             style: TextStyle(
                               color: Colors.grey[500],
                             ),

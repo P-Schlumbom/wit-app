@@ -140,6 +140,9 @@ class _ClassificationHistory extends State<ClassificationHistory> {
     int index = 0;
     int numItems = box.values.length;
     return box.values.toList().reversed.map((result){
+      if (result is List<ClassificationResult>){
+        result = result[0];
+      }
       int boxIndex = numItems - 1 - index;
       var container = Container(
         child: ListTile(

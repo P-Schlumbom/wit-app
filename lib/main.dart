@@ -228,6 +228,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
       int? modelDim = modelDims[modelID];
       List<List<dynamic>?> allPredictions = [];
+      List<ClassificationResult> classificationResults = [];
+      DateTime timestamp = DateTime.now();
 
       // prepare directory paths for storing images locally
       Directory dir = await getApplicationDocumentsDirectory();
@@ -264,6 +266,9 @@ class _MyHomePageState extends State<MyHomePage> {
         prediction = applySoftmax(prediction);
         allPredictions.add(prediction);
 
+        List<Prediction> topFivePredictions = await _getTopFivePredictions(prediction);
+        classificationResults.add(ClassificationResult(topFivePredictions[0].species, savePath, timestamp, topFivePredictions));
+
         imageCounter++;
       }
 
@@ -279,7 +284,10 @@ class _MyHomePageState extends State<MyHomePage> {
       }
       
       List<Prediction> topFivePredictions = await _getTopFivePredictions(averageSoftmaxScores);
-      box.add(ClassificationResult(topFivePredictions[0].species, firstPath, DateTime.now(), topFivePredictions));
+      ClassificationResult overallResult = ClassificationResult(topFivePredictions[0].species, firstPath, timestamp, topFivePredictions);
+      classificationResults.insert(0, overallResult);
+      //box.add(ClassificationResult(topFivePredictions[0].species, firstPath, DateTime.now(), topFivePredictions));
+      box.add(classificationResults);  // Note this is now a list of classification results, which must be taken into account!
 
       //setState(() => this.image = File(predImage.path));  // unecessary?
       setState(() {
