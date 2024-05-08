@@ -556,18 +556,35 @@ class _Classification extends State<Classification>{
     return ClipRRect(
       borderRadius: BorderRadius.circular(65), //const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)), // Set your desired border radius
       child: FittedBox(
-          child: ClipRRect(borderRadius: BorderRadius.circular(65), child: image,),
-          /*child: GestureDetector(
-            child: ClipRRect(borderRadius: BorderRadius.circular(65), child: image,),
-            /*child: Hero(
-              tag: 'imageHero_$index',
-              //child: image,
-              child: ClipRRect(borderRadius: BorderRadius.circular(65), child: image,),
-            ),*/
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) {return FullScreenImage(image: image, index: index,);}));
-            },
-          ),*/
+          child: Stack(
+            alignment: Alignment.bottomLeft,
+            children: <Widget>[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(65),
+                child: image
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(8.0),
+                  decoration: BoxDecoration(
+                    color: Colors.black,//.withOpacity(0.5),
+                    borderRadius: const BorderRadius.only(topRight: Radius.circular(8))
+                  ),
+                  child: Text(
+                      classificationResults[index].prediction
+                  )
+                )
+              ),
+              Container(
+                width: 80,
+                height: 80,
+                color: Colors.blue,
+              ),
+            ]
+          ),
+          //child: ClipRRect(borderRadius: BorderRadius.circular(65), child: image,),
           fit: BoxFit.cover,
       ),
     );
