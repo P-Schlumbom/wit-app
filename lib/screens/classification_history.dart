@@ -141,7 +141,9 @@ class _ClassificationHistory extends State<ClassificationHistory> {
     // note that this may possibly be a slightly questionable method currently
     int index = 0;
     int numItems = box.values.length;
-    return box.values.toList().reversed.map((result){
+    //return box.values.toList().reversed.map((result){
+    return box.keys.toList().reversed.map((key){
+      var result = box.get(key);
       ClassificationResult displayResult = ClassificationResult('none', '', DateTime.now(), <Prediction>[const Prediction(0, 'none', 0.0, NameData(0, 'none', ['none'], ['none']))]);
       if (result is List<ClassificationResult> || (result is List<dynamic> && result[0] is ClassificationResult)){
         displayResult = result[0] as ClassificationResult;
@@ -152,7 +154,8 @@ class _ClassificationHistory extends State<ClassificationHistory> {
         debugPrint("entry type: ${result.runtimeType}");
         debugPrint("entry element type: ${result[0].runtimeType}");
       }  // Problem: DisplayResult sometimes gets a different entry than what is pointed to by boxIndex!
-      int boxIndex = numItems - 1 - index;
+      //int boxIndex = numItems - 1 - index;
+      int boxIndex = key;
       var container = Container(
         child: ListTile(
           leading: ClipOval(
