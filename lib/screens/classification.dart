@@ -782,10 +782,12 @@ class _Classification extends State<Classification>{
 
     var boxResult = box.getAt(widget.classificationID);
     if (boxResult is! List<ClassificationResult>) {
-      boxResult = [boxResult as ClassificationResult];
-      box.put(widget.classificationID, boxResult);  // if it's an old entry, replace with a list of size 1
+      List<ClassificationResult> newResult = [boxResult as ClassificationResult];
+      box.put(widget.classificationID, newResult);  // if it's an old entry, replace with a list of size 1
+      classificationResults = newResult;
+    } else {
+      classificationResults = boxResult;
     }
-    classificationResults = boxResult;
     imagesFuture = _getImages();
     swiperController = SwiperController();
     fullScreenSwiper = FullScreenSwiper(

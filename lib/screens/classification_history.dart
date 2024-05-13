@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:wit_app/classes/classification_result.dart';
+import 'package:wit_app/classes/name_data.dart';
+import 'package:wit_app/classes/prediction.dart';
 import 'package:wit_app/globals.dart';
 
 import 'package:wit_app/screens/classification.dart';
@@ -140,15 +142,22 @@ class _ClassificationHistory extends State<ClassificationHistory> {
     int index = 0;
     int numItems = box.values.length;
     return box.values.toList().reversed.map((result){
-      if (result is List<ClassificationResult>){
-        result = result[0];
-      }
+      ClassificationResult displayResult = ClassificationResult('none', '', DateTime.now(), <Prediction>[const Prediction(0, 'none', 0.0, NameData(0, 'none', ['none'], ['none']))]);
+      if (result is List<ClassificationResult> || (result is List<dynamic> && result[0] is ClassificationResult)){
+        displayResult = result[0] as ClassificationResult;
+      } else if (result is ClassificationResult) {
+        displayResult = result;
+      } else {
+        debugPrint("WRONG ENTRY TYPE!");
+        debugPrint("entry type: ${result.runtimeType}");
+        debugPrint("entry element type: ${result[0].runtimeType}");
+      }  // Problem: DisplayResult sometimes gets a different entry than what is pointed to by boxIndex!
       int boxIndex = numItems - 1 - index;
       var container = Container(
         child: ListTile(
           leading: ClipOval(
             child: FutureBuilder<Image?>(
-              future: _getImage(result.imagePath),
+              future: _getImage(displayResult.imagePath),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   return snapshot.data ?? const Icon(Icons.image_not_supported_outlined);
@@ -158,8 +167,8 @@ class _ClassificationHistory extends State<ClassificationHistory> {
               },
             ),
           ),
-          title: getTitleName(result),
-          subtitle: Text(DateFormat('yyyy-MM-dd - kk:mm').format(result.timestamp)),
+          title: getTitleName(displayResult),
+          subtitle: Text(DateFormat('yyyy-MM-dd - kk:mm').format(displayResult.timestamp)),
           onTap: () {
             Navigator.push(
                 context,
