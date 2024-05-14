@@ -780,14 +780,28 @@ class _Classification extends State<Classification>{
     super.initState();
     box = Hive.box('resultsBox');
 
-    var boxResult = box.getAt(widget.classificationID);
-    if (boxResult is! List<ClassificationResult>) {
+    //var boxResult = box.getAt(widget.classificationID);
+    var boxResult = box.get(widget.classificationID);
+    /*if (boxResult is! List<ClassificationResult>) {
       List<ClassificationResult> newResult = [boxResult as ClassificationResult];
       box.put(widget.classificationID, newResult);  // if it's an old entry, replace with a list of size 1
       classificationResults = newResult;
     } else {
       classificationResults = boxResult;
+    }*/
+
+    if (boxResult is ClassificationResult) {
+      List<ClassificationResult> newResult = [boxResult];
+      box.put(widget.classificationID, newResult);  // if it's an old entry, replace with a list of size 1
+      classificationResults = newResult;
+    } else if (boxResult is List<dynamic> && boxResult[0] is ClassificationResult) {
+      List<ClassificationResult> newResult = boxResult.map((classification) {return classification as ClassificationResult;}).toList();
+      box.put(widget.classificationID, newResult);  // if it's an old entry, replace with a list of size 1
+      classificationResults = newResult;
+    } else {
+      classificationResults = boxResult;
     }
+
     imagesFuture = _getImages();
     swiperController = SwiperController();
     fullScreenSwiper = FullScreenSwiper(

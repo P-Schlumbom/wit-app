@@ -287,17 +287,21 @@ class _MyHomePageState extends State<MyHomePage> {
       ClassificationResult overallResult = ClassificationResult(topFivePredictions[0].species, firstPath, timestamp, topFivePredictions);
       classificationResults.insert(0, overallResult);
       //box.add(ClassificationResult(topFivePredictions[0].species, firstPath, DateTime.now(), topFivePredictions));
-      box.add(classificationResults);  // Note this is now a list of classification results, which must be taken into account!
+      //box.add(classificationResults);  // Note this is now a list of classification results, which must be taken into account!
+      //String timeKey = DateFormat('yyDHmmss').format(DateTime.now());
+      int timeKey = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      debugPrint("filename is $timeKey");
+      box.put(timeKey, classificationResults);
 
       //setState(() => this.image = File(predImage.path));  // unecessary?
       setState(() {
         _isLoading = false;
       });
 
-      int boxIndex = box.values.length - 1;
+      //int boxIndex = box.values.length - 1;
       Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => Classification(classificationID: boxIndex,))
+          MaterialPageRoute(builder: (context) => Classification(classificationID: timeKey,))
       );
     } on PlatformException catch (e) {
       debugPrint('Failed in picking image: $e');

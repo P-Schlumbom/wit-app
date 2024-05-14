@@ -33,19 +33,34 @@ class _ClassificationHistory extends State<ClassificationHistory> {
   Future<void> deleteEntry(int index) async {
     // given a specific result ID, delete the image referenced by it and delete
     // the entry from the Hive box
-    //debugPrint(index.toString());
-    //debugPrint((box.values.length).toString());
-    ClassificationResult? item = box.getAt(index);
-    String imagePath = item!.imagePath;
-    //debugPrint(imagePath);
-    // delete image
-    // must check if source image is stored locally or a reference to an on-device image
-    if (imagePath.startsWith('$dir.Path${Platform.pathSeparator}files${Platform.pathSeparator}') == true) {
-      File? sourceImage = File(imagePath);
-      await sourceImage.delete(); // to complete (?)
+    //ClassificationResult? item = box.getAt(index);
+    var item = box.get(index);
+    List<ClassificationResult> items;
+    if (item is ClassificationResult) {
+      items = [item];
+    } else if ((item is List<dynamic> && item[0] is ClassificationResult)) {
+      items = item.map((classification) {return classification as ClassificationResult;}).toList();
+    } else {
+      items = item;
     }
+    //ClassificationResult? item = box.get(index);
+    //String imagePath = item!.imagePath;
+    List<String> imagePaths = items.map((classification) {
+      return classification.imagePath;
+    }).toList();
+
+
+    // delete images
+    // must check if source image is stored locally or a reference to an on-device image
+    for (int i = 0; i < imagePaths.length; i++){
+      if (imagePaths[i].startsWith('$dir.Path${Platform.pathSeparator}files${Platform.pathSeparator}') == true) {
+        File? sourceImage = File(imagePaths[i]);
+        await sourceImage.delete(); // to complete (?)
+      }
+    }
+
     // delete Hive entry
-    box.deleteAt(index);
+    box.delete(index);
     setState(() {
       // refresh the page
     });
