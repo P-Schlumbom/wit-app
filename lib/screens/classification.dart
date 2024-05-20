@@ -552,8 +552,8 @@ class _Classification extends State<Classification>{
     );
   }
 
-  ClipRRect imageDisplayTile(Widget image, int index) {
-    return ClipRRect(
+  Widget imageDisplayTile(Widget image, int index) {
+    /*return ClipRRect(
       borderRadius: BorderRadius.circular(65), //const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)), // Set your desired border radius
       child: FittedBox(
           child: Stack(
@@ -587,7 +587,111 @@ class _Classification extends State<Classification>{
           //child: ClipRRect(borderRadius: BorderRadius.circular(65), child: image,),
           fit: BoxFit.cover,
       ),
+    );*/
+    /*return ClipRRect(
+      borderRadius: BorderRadius.circular(65), //const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)), // Set your desired border radius
+      child: Stack(
+        alignment: Alignment.bottomLeft,
+        children: <Widget>[
+          FittedBox(
+            fit: BoxFit.cover,
+            child: image,
+          ),
+          Positioned(
+              bottom: 0,
+              left: 0,
+              child: Container(
+                  padding: const EdgeInsets.all(8.0),
+                  decoration: BoxDecoration(
+                      color: Colors.black,//.withOpacity(0.5),
+                      borderRadius: const BorderRadius.only(topRight: Radius.circular(8))
+                  ),
+                  child: Text(
+                      classificationResults[index].prediction
+                  )
+              )
+          ),
+          Container(
+            width: 80,
+            height: 80,
+            color: Colors.blue,
+          ),
+        ]
+      )
+    );*/
+    /*return Stack(
+      alignment: Alignment.bottomLeft,
+      children: <Widget>[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(65),
+          child: FittedBox(
+            child: ClipRRect(
+                borderRadius: BorderRadius.circular(65),
+                child: image
+            ),
+            fit: BoxFit.cover,
+          )
+        ),
+        Positioned(
+            child: Container(
+              padding: const EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                  color: Colors.black,//.withOpacity(0.5),
+                  borderRadius: const BorderRadius.only(topRight: Radius.circular(8))
+              ),
+              child: Text(
+                  classificationResults[index].prediction
+              )
+          )
+        ),
+        Container(
+          width: 80,
+          height: 80,
+          color: Colors.blue,
+        ),
+      ],
+    );*/
+    return Container(
+      width: MediaQuery.of(context).size.width, // Adjust the width as needed
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(65),
+        child: Stack(
+          alignment: Alignment.topLeft,
+          children: <Widget>[
+            SizedBox(
+              width: MediaQuery.of(context).size.width, // Adjust the width as needed
+              height: MediaQuery.of(context).size.height, // Adjust the height as needed
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: image,
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0, // Added to ensure the text container stretches full width
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 8.0),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(8),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    "${classificationResults[index].prediction} (${classificationResults[index].topFivePredictions[0].probability.toStringAsPrecision(3)})",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
+
+
   }
 
   Future loadSpeciesData() async {
@@ -853,7 +957,7 @@ class _Classification extends State<Classification>{
                             itemWidth: MediaQuery.of(context).size.width*0.95,
                             scrollDirection: Axis.horizontal,
                             itemBuilder: (context, index) {
-                              return imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index);
+                              return imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index+1);
                               /*return GestureDetector(
                                 onTap: () {
                                   Navigator.push(context, MaterialPageRoute(builder: (context) => FullScreenImage(image: imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index), index: index,)));
