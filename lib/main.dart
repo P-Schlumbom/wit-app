@@ -211,16 +211,24 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future _pickImage(BuildContext context, ImageSource source) async {
     try {
-      /*final XFile? predImage = await ImagePicker().pickImage(
+      final List<XFile>? pickedImages;
+      if (source == ImageSource.camera) {
+        final XFile? pickedImage = await ImagePicker().pickImage(
           source: source,
           maxHeight: 768,
-          maxWidth: 768
-      );*/
-      final List<XFile>? pickedImages = await ImagePicker().pickMultiImage(
-        maxHeight: 768,
-        maxWidth: 768,
-      );
-      if (pickedImages == null || pickedImages.isEmpty) return;
+          maxWidth: 768,
+        );
+        if (pickedImage == null) return;
+
+        pickedImages = [pickedImage];
+      } else {
+        pickedImages = await ImagePicker().pickMultiImage(
+          maxHeight: 768,
+          maxWidth: 768,
+        );
+      }
+
+      if (pickedImages.isEmpty) return;
 
       setState(() {
         _isLoading = true;

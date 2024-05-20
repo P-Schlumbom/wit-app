@@ -691,7 +691,6 @@ class _Classification extends State<Classification>{
       ),
     );
 
-
   }
 
   Future loadSpeciesData() async {
