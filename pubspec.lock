@@ -209,6 +209,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.18.0"
+  computer:
+    dependency: transitive
+    description:
+      name: computer
+      sha256: "34176c612a02ebf3e5eaa3e9b40e2b1df495043c46614999639d19e66823232d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.1"
   convert:
     dependency: transitive
     description:
@@ -728,14 +736,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.0"
-  pytorch_mobile:
+  pytorch_lite:
     dependency: "direct main"
     description:
-      name: pytorch_mobile
-      sha256: "43733398db3f2b7c97d6d02a6333a94eedcc1cfdfddb5b5c1aa62ee5b665fd9c"
+      name: pytorch_lite
+      sha256: "1c192fca5ddb9c7d032df9122f548fbe6c7fb85557ea4a5f2bd54bddac297b53"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.2"
+    version: "4.3.0"
   shared_preferences_android:
     dependency: "direct main"
     description:

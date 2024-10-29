@@ -12,9 +12,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:pytorch_mobile/pytorch_mobile.dart';
+import 'package:pytorch_lite/lib.dart';
+/*import 'package:pytorch_mobile/pytorch_mobile.dart';
 import 'package:pytorch_mobile/model.dart';
-import 'package:pytorch_mobile/enums/dtype.dart';
+import 'package:pytorch_mobile/enums/dtype.dart';*/
 
 import 'package:flutter/foundation.dart';  // for debugPrint
 
@@ -34,6 +35,9 @@ import 'classes/name_data.dart';
 import 'screens/classification_history.dart';
 import 'screens/classification.dart';
 import 'screens/model_manager.dart';
+
+// new pytorch package...
+//import 'package:pytorch_lite/pytorch_lite.dart';
 
 
 void main() async {
@@ -114,7 +118,9 @@ class _MyHomePageState extends State<MyHomePage> {
   };
 
   //File? image;// = File("assets/logos/TAIAO.png");
-  Model? imageModel;
+  //Model? imageModel;  // pytorch_mobile version
+  ClassificationModel? imageModel;
+
   //PostProcessingModel? imageModel;
   String? imagePrediction;
   late final Box box;
@@ -203,7 +209,8 @@ class _MyHomePageState extends State<MyHomePage> {
     String? modelPath = modelPaths[modelID];
 
     try {
-      imageModel = await PyTorchMobile.loadModel(modelPath!);
+      //imageModel = await PyTorchMobile.loadModel(modelPath!);  // pytorch_mobile version
+      imageModel = await PytorchLite.loadClassificationModel(modelPath!, modelDims[modelID]!, modelDims[modelID]!, numClasses);
     } on PlatformException {
       debugPrint("only supported for android and ios for now");
     }
@@ -263,10 +270,15 @@ class _MyHomePageState extends State<MyHomePage> {
         debugPrint("saving image to: $savePath");
         await imageFile.saveTo(savePath);
 
-        List? prediction = await imageModel!.getImagePredictionList(
+        /*List? prediction = await imageModel!.getImagePredictionList(
           File(imageFile.path),
           modelDim!,
           modelDim,
+          mean: mean,
+          std: std,
+        );*/  // pytorch_mobile version
+        List? prediction = await imageModel!.getImagePredictionList(
+          await File(imageFile.path).readAsBytes(),
           mean: mean,
           std: std,
         );

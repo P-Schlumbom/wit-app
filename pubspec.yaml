@@ -47,8 +47,8 @@ dependencies:
   hive:
   hive_flutter:
   hive_generator: # for TypeAdapter
-  build_runner: # for TypeAdapter
-  pytorch_mobile:
+  build_runner: # for TypeAdapter  # pytorch_mobile:
+  pytorch_lite:
   flutter_launcher_icons: #^0.9.3
   url_launcher:
   card_swiper: ^3.0.0
