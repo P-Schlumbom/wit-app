@@ -1,4 +1,4 @@
-package com.example.wit_app;
+package com.waikatolink.wit_app;
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity;
