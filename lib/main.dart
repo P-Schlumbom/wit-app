@@ -113,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
     "species_model_squeezenet": "assets/models/species_model_squeezenet.pt"
   };
   Map<String, int> modelDims = {
-    "species_model_s": 768, //384  // using this works better?!
+    "species_model_s": 768, //768, //384  // using this works better?!
     "species_model_squeezenet": 224
   };
 
@@ -219,19 +219,20 @@ class _MyHomePageState extends State<MyHomePage> {
   Future _pickImage(BuildContext context, ImageSource source) async {
     try {
       final List<XFile>? pickedImages;
+      double imageMaxSize = 768;
       if (source == ImageSource.camera) {
         final XFile? pickedImage = await ImagePicker().pickImage(
           source: source,
-          maxHeight: 768,
-          maxWidth: 768,
+          maxHeight: imageMaxSize,
+          maxWidth: imageMaxSize,
         );
         if (pickedImage == null) return;
 
         pickedImages = [pickedImage];
       } else {
         pickedImages = await ImagePicker().pickMultiImage(
-          maxHeight: 768,
-          maxWidth: 768,
+          maxHeight: imageMaxSize,
+          maxWidth: imageMaxSize,
         );
       }
 
