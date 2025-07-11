@@ -12,10 +12,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:pytorch_lite/lib.dart';
-/*import 'package:pytorch_mobile/pytorch_mobile.dart';
+import 'package:pytorch_mobile/pytorch_mobile.dart';
 import 'package:pytorch_mobile/model.dart';
-import 'package:pytorch_mobile/enums/dtype.dart';*/
+import 'package:pytorch_mobile/enums/dtype.dart';
 
 import 'package:flutter/foundation.dart';  // for debugPrint
 
@@ -35,9 +34,6 @@ import 'classes/name_data.dart';
 import 'screens/classification_history.dart';
 import 'screens/classification.dart';
 import 'screens/model_manager.dart';
-
-// new pytorch package...
-//import 'package:pytorch_lite/pytorch_lite.dart';
 
 
 void main() async {
@@ -68,17 +64,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'WIT app',
       theme: ThemeData(
-        //primarySwatch: Colors.teal,
-        //primaryColor: Colors.teal,
+        primarySwatch: Colors.teal,
         scaffoldBackgroundColor: const Color(0xFFeff6e0),
-        colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.teal,
-          //primary: Colors.teal,
-        ),
-        appBarTheme: const AppBarTheme(
-          color: const Color(0xFFeff6e0), //Colors.teal,
-          foregroundColor: Colors.teal, //const Color(0xFFeff6e0),
-        )
         /*textTheme: TextTheme(
           bodyLarge: TextStyle(color: Colors.indigo.shade900),
           bodyMedium: TextStyle(color: Colors.indigo.shade900),
@@ -113,14 +100,12 @@ class _MyHomePageState extends State<MyHomePage> {
     "species_model_squeezenet": "assets/models/species_model_squeezenet.pt"
   };
   Map<String, int> modelDims = {
-    "species_model_s": 768, //768, //384  // using this works better?!
+    "species_model_s": 384,
     "species_model_squeezenet": 224
   };
 
   //File? image;// = File("assets/logos/TAIAO.png");
-  //Model? imageModel;  // pytorch_mobile version
-  ClassificationModel? imageModel;
-
+  Model? imageModel;
   //PostProcessingModel? imageModel;
   String? imagePrediction;
   late final Box box;
@@ -209,8 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
     String? modelPath = modelPaths[modelID];
 
     try {
-      //imageModel = await PyTorchMobile.loadModel(modelPath!);  // pytorch_mobile version
-      imageModel = await PytorchLite.loadClassificationModel(modelPath!, modelDims[modelID]!, modelDims[modelID]!, numClasses);
+      imageModel = await PyTorchMobile.loadModel(modelPath!);
     } on PlatformException {
       debugPrint("only supported for android and ios for now");
     }
@@ -218,111 +202,56 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future _pickImage(BuildContext context, ImageSource source) async {
     try {
-      final List<XFile>? pickedImages;
-      double imageMaxSize = 768;
-      if (source == ImageSource.camera) {
-        final XFile? pickedImage = await ImagePicker().pickImage(
+      final XFile? predImage = await ImagePicker().pickImage(
           source: source,
-          maxHeight: imageMaxSize,
-          maxWidth: imageMaxSize,
-        );
-        if (pickedImage == null) return;
+          maxHeight: 768,
+          maxWidth: 768
+      );
+      if (predImage == null) return;
 
-        pickedImages = [pickedImage];
-      } else {
-        pickedImages = await ImagePicker().pickMultiImage(
-          maxHeight: imageMaxSize,
-          maxWidth: imageMaxSize,
-        );
+      // store image locally
+      Directory dir = await getApplicationDocumentsDirectory();
+      //final String dirPath = dir.path;
+      final String dirPath = dir.path + "${Platform.pathSeparator}files${Platform.pathSeparator}$version";
+      debugPrint(dirPath);
+      final Directory targetDir = Directory(dirPath);
+      final String filename = "${DateFormat('yyyyMMddkkmmss').format(DateTime.now())}.png";
+      // alternatively to checking if image was picked from gallery above, save a copy of the image always
+      String savePath = '$dirPath${Platform.pathSeparator}' + filename;
+
+      if (!await targetDir.exists()) {
+        await targetDir.create(recursive: true);
       }
 
-      if (pickedImages.isEmpty) return;
+      await predImage.saveTo(savePath);
 
       setState(() {
         _isLoading = true;
       });
 
       int? modelDim = modelDims[modelID];
-      List<List<dynamic>?> allPredictions = [];
-      List<ClassificationResult> classificationResults = [];
-      DateTime timestamp = DateTime.now();
 
-      // prepare directory paths for storing images locally
-      Directory dir = await getApplicationDocumentsDirectory();
-      final String dirPath = dir.path + "${Platform.pathSeparator}files${Platform.pathSeparator}$version";
-      final Directory targetDir = Directory(dirPath);
-      if (!await targetDir.exists()) {
-        await targetDir.create(recursive: true);
-      }
-
-      int imageCounter = 0;
-      String firstPath = "";
-      String filename = DateFormat('yyyyMMddkkmmss').format(DateTime.now());
-      String coreSavePath = '$dirPath${Platform.pathSeparator}' + filename;
-      for (XFile imageFile in pickedImages) {
-        String savePath = "";
-        // The first image keeps the default format, subsequent images are numbered
-        if (imageCounter == 0) {
-          savePath = coreSavePath + ".png";
-          firstPath = savePath;
-        } else {
-          savePath = coreSavePath + "_$imageCounter.png";
-        }
-        debugPrint("saving image to: $savePath");
-        await imageFile.saveTo(savePath);
-
-        /*List? prediction = await imageModel!.getImagePredictionList(
-          File(imageFile.path),
-          modelDim!,
-          modelDim,
-          mean: mean,
-          std: std,
-        );*/  // pytorch_mobile version
-        List? prediction = await imageModel!.getImagePredictionList(
-          await File(imageFile.path).readAsBytes(),
-          mean: mean,
-          std: std,
-        );
-        prediction = applyTemperatureScaling(prediction);
-        prediction = applySoftmax(prediction);
-        allPredictions.add(prediction);
-
-        List<Prediction> topFivePredictions = await _getTopFivePredictions(prediction);
-        classificationResults.add(ClassificationResult(topFivePredictions[0].species, savePath, timestamp, topFivePredictions));
-
-        imageCounter++;
-      }
-
-      // Calculate average softmax scores per class
-      List<double> averageSoftmaxScores = [];
-      int numPreds = allPredictions.length;
-      for (int i = 0; i < numClasses; i++){
-        double sum = 0.0;
-        for (int j = 0; j < numPreds; j++){
-          sum += allPredictions[j]?[i];
-        }
-        averageSoftmaxScores.add(sum / numPreds);
-      }
-      
-      List<Prediction> topFivePredictions = await _getTopFivePredictions(averageSoftmaxScores);
-      ClassificationResult overallResult = ClassificationResult(topFivePredictions[0].species, firstPath, timestamp, topFivePredictions);
-      classificationResults.insert(0, overallResult);
-      //box.add(ClassificationResult(topFivePredictions[0].species, firstPath, DateTime.now(), topFivePredictions));
-      //box.add(classificationResults);  // Note this is now a list of classification results, which must be taken into account!
-      //String timeKey = DateFormat('yyDHmmss').format(DateTime.now());
-      int timeKey = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      debugPrint("filename is $timeKey");
-      box.put(timeKey, classificationResults);
+      List? prediction = await imageModel!.getImagePredictionList(
+        File(predImage.path),
+        modelDim!,
+        modelDim,
+        mean: mean,
+        std: std,
+      );
+      prediction = applyTemperatureScaling(prediction);
+      prediction = applySoftmax(prediction);
+      List<Prediction> topFivePredictions = await _getTopFivePredictions(prediction);
+      box.add(ClassificationResult(topFivePredictions[0].species, savePath, DateTime.now(), topFivePredictions));
 
       //setState(() => this.image = File(predImage.path));  // unecessary?
       setState(() {
         _isLoading = false;
       });
 
-      //int boxIndex = box.values.length - 1;
+      int boxIndex = box.values.length - 1;
       Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => Classification(classificationID: timeKey,))
+          MaterialPageRoute(builder: (context) => Classification(classificationID: boxIndex,))
       );
     } on PlatformException catch (e) {
       debugPrint('Failed in picking image: $e');
@@ -336,10 +265,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }) => ElevatedButton(
     style: ElevatedButton.styleFrom(
         minimumSize: const Size.fromHeight(56),
-        //primary: Colors.amber,
-        //onPrimary: Colors.white,
-        foregroundColor: Colors.white,
         backgroundColor: Colors.amber,
+        foregroundColor: Colors.white,
         textStyle: const TextStyle(fontSize: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28.0))
     ),

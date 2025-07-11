@@ -1,11 +1,8 @@
 //import 'dart:html';
 
 import 'package:camera/camera.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
@@ -13,176 +10,13 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import 'package:card_swiper/card_swiper.dart';
 
 import 'package:wit_app/classes/classification_result.dart';
-import 'package:wit_app/classes/prediction.dart';
 import 'package:wit_app/utils/custom_expansion_tile.dart';
 
 import 'package:wit_app/globals.dart';
 
 
-class CustomImageTransition extends StatelessWidget {
-  final Widget child;
-
-  CustomImageTransition({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: Duration(milliseconds: 250),
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        return ScaleTransition(
-          scale: animation,
-          child: child,
-        );
-      },
-      child: child,
-    );
-  }
-}
-
-class FullScreenImage extends StatelessWidget {
-  final Widget image;
-  final int index;
-
-  FullScreenImage({required this.image, required this.index});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: GestureDetector(
-        child: Center(child: image),
-        /*child: Center(
-          child: Hero(
-            tag: 'imageHero_$index',
-            child: CustomImageTransition(
-              child: image,
-            ),
-          ),
-        ),*/
-        onTap: () {
-          Navigator.pop(context);
-        },
-      ),
-    );
-  }
-}
-
-class FullScreenSwiper extends StatefulWidget {
-  final Future<List<Image?>> images;
-  final int initialIndex;
-  //final Function(int) onIndexChanged;
-  //final ValueListenableBuilder listener;
-  final ValueNotifier<int> currentIndexNotifier;
-  final Function(int) onExit;
-
-  const FullScreenSwiper({
-    Key? key,
-    required this.images,
-    required this.initialIndex,
-    required this.currentIndexNotifier,
-    required this.onExit,
-  }) : super(key: key);
-
-  @override
-  _FullScreenSwiper createState() => _FullScreenSwiper();
-
-  /*void updateCurrentIndex(int index, BuildContext context) {
-    _FullScreenSwiper._updateCurrentIndex(index);
-  }*/
-}
-
-class _FullScreenSwiper extends State<FullScreenSwiper>{
-  int currentIndex = 0;
-  late final Future<List<Image?>> images;
-
-  @override
-  void initState() {
-    super.initState();
-    images = widget.images;
-    currentIndex = widget.initialIndex;
-  }
-  
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<int>(
-      valueListenable: widget.currentIndexNotifier,
-      builder: (context, currentIndex, _) {
-        return Scaffold(
-          body: FutureBuilder<List<Image?>>(
-            future: images,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.done) {
-                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                  return Swiper(
-                    itemCount: snapshot.data!.length,
-                    index: currentIndex,
-                    itemWidth: MediaQuery.of(context).size.width*0.99,
-                    scrollDirection: Axis.horizontal,
-                    itemBuilder: (context, index) {
-                      debugPrint("In main swiper, page $index");
-                      currentIndex = index;
-                      return Center(
-                          child: ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined)
-                          )
-                      );
-                    },
-                    layout: SwiperLayout.STACK,
-                    pagination: const SwiperPagination(margin: EdgeInsets.all(10.0)),
-                    loop: false,
-                    onTap: (index) {
-                      widget.onExit(index);
-                      Navigator.pop(context);
-                    },
-                  );
-                  /*return Swiper(
-                  itemCount: snapshot.data!.length,
-                  itemWidth: MediaQuery.of(context).size.width*0.95,
-                  scrollDirection: Axis.horizontal,
-                  itemBuilder: (context, index) {
-                    return imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index);
-                    /*return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => FullScreenImage(image: imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index), index: index,)));
-                                },
-                                child: imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index),
-                              );*/
-                  },
-                  layout: SwiperLayout.STACK,
-                  pagination: const SwiperPagination(margin: EdgeInsets.all(10.0)),
-                  loop: false,
-                );*/
-                } else {
-                  return const Center(child: Text("No images available"));
-                }
-              } else if (snapshot.hasError) {
-                return const Center(child: Text("Error loading images"));
-              } else {
-                return const Center(child: CircularProgressIndicator());
-              }
-            },
-          ),
-
-        );
-      },
-    );
-
-  }
-  
-  void _updateCurrentIndex(int index){
-    setState(() {
-      currentIndex = index;
-    });
-    //widget.onIndexChanged(index);
-  }
-  
-  int _getCurrentIndex(){
-    return currentIndex;
-  }
-}
 
 class Classification extends StatefulWidget {
   final int classificationID;
@@ -194,8 +28,7 @@ class Classification extends StatefulWidget {
 
 class _Classification extends State<Classification>{
   late final Box box;
-  late final List<ClassificationResult> classificationResults;
-  late final List<Prediction> averageTopFive;
+  late final ClassificationResult classificationResult;
   late final String stringID;
   late final String speciesName;
   late final List<String> engNames;
@@ -209,23 +42,16 @@ class _Classification extends State<Classification>{
   //Image? image;
   final ScrollController controller = ScrollController();
 
-  late final Future<List<Image?>> imagesFuture;
-  late final Future<double> maxImageHeight;
-  int currentIndex = 0;
-  late final FullScreenSwiper fullScreenSwiper;
-  late final SwiperController swiperController;
-  ValueNotifier<int> currentIndexNotifier = ValueNotifier<int>(0);
-
   String getTitle(){
-    if (classificationResults[0].topFivePredictions[0].probability < PROB_THRESHOLD ){
+    if (classificationResult.topFivePredictions[0].probability < PROB_THRESHOLD ){
       return "Unknown";
     }
-    String returnText = classificationResults[0].prediction;
-    List<String> engNames = classificationResults[0].topFivePredictions[0].nameData.engNames.isEmpty ? [""] : classificationResults[0].topFivePredictions[0].nameData.engNames;
-    List<String> mriNames = classificationResults[0].topFivePredictions[0].nameData.mriNames.isEmpty ? [""] : classificationResults[0].topFivePredictions[0].nameData.mriNames;
-    //String return_text = "${getCommonName(classificationResult[0].prediction, engNames, mriNames)}";
+    String returnText = classificationResult.prediction;
+    List<String> engNames = classificationResult.topFivePredictions[0].nameData.engNames.isEmpty ? [""] : classificationResult.topFivePredictions[0].nameData.engNames;
+    List<String> mriNames = classificationResult.topFivePredictions[0].nameData.mriNames.isEmpty ? [""] : classificationResult.topFivePredictions[0].nameData.mriNames;
+    //String return_text = "${getCommonName(classificationResult.prediction, engNames, mriNames)}";
     if (engNames[0] != "") {
-      returnText = returnText + " | " + classificationResults[0].topFivePredictions[0].nameData.engNames[0];
+      returnText = returnText + " | " + classificationResult.topFivePredictions[0].nameData.engNames[0];
     }
     if (mriNames[0] != "" && mriNames[0] != engNames[0]) {
       returnText = returnText + " | " + mriNames[0];
@@ -385,7 +211,7 @@ class _Classification extends State<Classification>{
 
   Future<RichText> createWikipediaText() async {
     // return nothing if the entry is deprecated or there isn't enough confidence for a prediction
-    if (deprecatedEntry == true || classificationResults[0].topFivePredictions[0].probability < PROB_THRESHOLD){
+    if (deprecatedEntry == true || classificationResult.topFivePredictions[0].probability < PROB_THRESHOLD){
       return RichText(text: const TextSpan(text: ""));
     }
 
@@ -546,171 +372,30 @@ class _Classification extends State<Classification>{
     String numberString = "${index + 1}. ";
     return ListTile(
       leading: Text(numberString),
-      title: SelectableText(classificationResults[0].topFivePredictions[index].species),
-      trailing: Text((classificationResults[0].topFivePredictions[index].probability).toStringAsPrecision(3)),
-      textColor: const Color(0xFFeff6e0).withOpacity(classificationResults[0].topFivePredictions[index].probability / 4 + 0.75),
+      title: SelectableText(classificationResult.topFivePredictions[index].species),
+      trailing: Text((classificationResult.topFivePredictions[index].probability).toStringAsPrecision(3)),
+      textColor: const Color(0xFFeff6e0).withOpacity(classificationResult.topFivePredictions[index].probability / 4 + 0.75),
     );
-  }
-
-  Widget imageDisplayTile(Widget image, int index) {
-    /*return ClipRRect(
-      borderRadius: BorderRadius.circular(65), //const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)), // Set your desired border radius
-      child: FittedBox(
-          child: Stack(
-            alignment: Alignment.bottomLeft,
-            children: <Widget>[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(65),
-                child: image
-              ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: Colors.black,//.withOpacity(0.5),
-                    borderRadius: const BorderRadius.only(topRight: Radius.circular(8))
-                  ),
-                  child: Text(
-                      classificationResults[index].prediction
-                  )
-                )
-              ),
-              Container(
-                width: 80,
-                height: 80,
-                color: Colors.blue,
-              ),
-            ]
-          ),
-          //child: ClipRRect(borderRadius: BorderRadius.circular(65), child: image,),
-          fit: BoxFit.cover,
-      ),
-    );*/
-    /*return ClipRRect(
-      borderRadius: BorderRadius.circular(65), //const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)), // Set your desired border radius
-      child: Stack(
-        alignment: Alignment.bottomLeft,
-        children: <Widget>[
-          FittedBox(
-            fit: BoxFit.cover,
-            child: image,
-          ),
-          Positioned(
-              bottom: 0,
-              left: 0,
-              child: Container(
-                  padding: const EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                      color: Colors.black,//.withOpacity(0.5),
-                      borderRadius: const BorderRadius.only(topRight: Radius.circular(8))
-                  ),
-                  child: Text(
-                      classificationResults[index].prediction
-                  )
-              )
-          ),
-          Container(
-            width: 80,
-            height: 80,
-            color: Colors.blue,
-          ),
-        ]
-      )
-    );*/
-    /*return Stack(
-      alignment: Alignment.bottomLeft,
-      children: <Widget>[
-        ClipRRect(
-          borderRadius: BorderRadius.circular(65),
-          child: FittedBox(
-            child: ClipRRect(
-                borderRadius: BorderRadius.circular(65),
-                child: image
-            ),
-            fit: BoxFit.cover,
-          )
-        ),
-        Positioned(
-            child: Container(
-              padding: const EdgeInsets.all(8.0),
-              decoration: BoxDecoration(
-                  color: Colors.black,//.withOpacity(0.5),
-                  borderRadius: const BorderRadius.only(topRight: Radius.circular(8))
-              ),
-              child: Text(
-                  classificationResults[index].prediction
-              )
-          )
-        ),
-        Container(
-          width: 80,
-          height: 80,
-          color: Colors.blue,
-        ),
-      ],
-    );*/
-    return Container(
-      width: MediaQuery.of(context).size.width, // Adjust the width as needed
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(65),
-        child: Stack(
-          alignment: Alignment.topLeft,
-          children: <Widget>[
-            SizedBox(
-              width: MediaQuery.of(context).size.width, // Adjust the width as needed
-              height: MediaQuery.of(context).size.height, // Adjust the height as needed
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: image,
-              ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0, // Added to ensure the text container stretches full width
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 8.0),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(8),
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    "${classificationResults[index].prediction} (${classificationResults[index].topFivePredictions[0].probability.toStringAsPrecision(3)})",
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
   }
 
   Future loadSpeciesData() async {
-    stringID = classificationResults[0].topFivePredictions[0].index.toString();
+    stringID = classificationResult.topFivePredictions[0].index.toString();
     //engNames = List<String>.from(speciesNamesMap[stringID]["eng"]);
     //mriNames = List<String>.from(speciesNamesMap[stringID]["mri"]);
-    engNames = classificationResults[0].topFivePredictions[0].nameData.engNames;
-    mriNames = classificationResults[0].topFivePredictions[0].nameData.mriNames;
-    bool acceptPred = classificationResults[0].topFivePredictions[0].probability >= PROB_THRESHOLD;  // no need to display notifications if confidence is too low
+    engNames = classificationResult.topFivePredictions[0].nameData.engNames;
+    mriNames = classificationResult.topFivePredictions[0].nameData.mriNames;
+    bool acceptPred = classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD;  // no need to display notifications if confidence is too low
     // set plant status
     List<String> topFiveIndices = [
-      classificationResults[0].topFivePredictions[0].index.toString(),
-      classificationResults[0].topFivePredictions[1].index.toString(),
-      classificationResults[0].topFivePredictions[2].index.toString(),
-      classificationResults[0].topFivePredictions[3].index.toString(),
-      classificationResults[0].topFivePredictions[4].index.toString(),
+      classificationResult.topFivePredictions[0].index.toString(),
+      classificationResult.topFivePredictions[1].index.toString(),
+      classificationResult.topFivePredictions[2].index.toString(),
+      classificationResult.topFivePredictions[3].index.toString(),
+      classificationResult.topFivePredictions[4].index.toString(),
     ];
 
     // check if this information was saved with the current database
-    String imagePath = classificationResults[0].imagePath;
+    String imagePath = classificationResult.imagePath;
     List<String> pathComponents = path.split(imagePath);
     String usedVersion = pathComponents[pathComponents.length - 2];
     //debugPrint("getting last element of split...");
@@ -819,7 +504,7 @@ class _Classification extends State<Classification>{
 
     File standardFile = File(tgtPath);
     if (await standardFile.exists()) {
-      debugPrint("Loaded image from $tgtPath");
+      //debugPrint("Loaded image from $tgtPath");
       return Image.file(standardFile);
       //opacity: const AlwaysStoppedAnimation(0.5),);
     }
@@ -854,74 +539,20 @@ class _Classification extends State<Classification>{
     return null;
   }
 
-  Future<List<Image?>> _getImages() async {
-    /*
-    * Retrieve images from the box entry. If the entry has more than 1 entries, 
-    * the first entry is the summary entry and the image it's pointing to is 
-    * skipped.
-    * */
-    int numIms = classificationResults.length;
-    if (numIms == 1){
-      var image = await _getImage(classificationResults[0].imagePath);
-      return [image];
-    }
-
-    List<Image?> images = [];
-    
-    for (int i = 1; i<numIms; i++){
-      var image = await _getImage(classificationResults[i].imagePath);
-      images.add(image);
-    }
-
-    debugPrint("$images length: ${images.length}");
-    return images;
-  }
-
-
   @override
   void initState() {
     super.initState();
     box = Hive.box('resultsBox');
-
-    //var boxResult = box.getAt(widget.classificationID);
-    var boxResult = box.get(widget.classificationID);
-    /*if (boxResult is! List<ClassificationResult>) {
-      List<ClassificationResult> newResult = [boxResult as ClassificationResult];
-      box.put(widget.classificationID, newResult);  // if it's an old entry, replace with a list of size 1
-      classificationResults = newResult;
-    } else {
-      classificationResults = boxResult;
-    }*/
-
-    if (boxResult is ClassificationResult) {
-      List<ClassificationResult> newResult = [boxResult];
-      box.put(widget.classificationID, newResult);  // if it's an old entry, replace with a list of size 1
-      classificationResults = newResult;
-    } else if (boxResult is List<dynamic> && boxResult[0] is ClassificationResult) {
-      List<ClassificationResult> newResult = boxResult.map((classification) {return classification as ClassificationResult;}).toList();
-      box.put(widget.classificationID, newResult);  // if it's an old entry, replace with a list of size 1
-      classificationResults = newResult;
-    } else {
-      classificationResults = boxResult;
-    }
-
-    imagesFuture = _getImages();
-    swiperController = SwiperController();
-    fullScreenSwiper = FullScreenSwiper(
-      images: imagesFuture,
-      initialIndex: currentIndex,
-      currentIndexNotifier: currentIndexNotifier,
-      onExit: (index) {currentIndex = index; swiperController.move(currentIndex);},
-    );
+    //debugPrint("${widget.classificationID}");
+    classificationResult = box.getAt(widget.classificationID);  // for demo purposes, select first(?) entry for now.
     loadSpeciesData();
   }
 
   @override
   Widget build(BuildContext context){
     return Scaffold(
-      //backgroundColor: Colors.teal,
         appBar: AppBar(
-          title: Text(classificationResults[0].topFivePredictions[0].probability >= PROB_THRESHOLD ? getCommonName(classificationResults[0].prediction, engNames, mriNames) : "Unknown"),
+          title: Text(classificationResult.topFivePredictions[0].probability >= PROB_THRESHOLD ? getCommonName(classificationResult.prediction, engNames, mriNames) : "Unknown"),
         ),
         body: SingleChildScrollView(
             child: ListView(
@@ -929,10 +560,9 @@ class _Classification extends State<Classification>{
               physics: const ScrollPhysics(),
               shrinkWrap: true,
               children: [
-                // original
-                /*FittedBox(
+                FittedBox(
                   child: FutureBuilder<Image?>(  // wait for image to be found/loaded and display icon in the meantime
-                    future: _getImage(classificationResult[0].imagePath),
+                    future: _getImage(classificationResult.imagePath),
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
                         return snapshot.data ?? const Icon(Icons.image_not_supported_outlined);
@@ -942,49 +572,7 @@ class _Classification extends State<Classification>{
                     },
                   ),
                   fit: BoxFit.fill,
-                ),*/
-                SizedBox(
-                  height: MediaQuery.of(context).size.width,
-                  child: FutureBuilder<List<Image?>>(
-                    future: imagesFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done) {
-                        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                          return Swiper(
-                            index: currentIndex,
-                            itemCount: snapshot.data!.length,
-                            itemWidth: MediaQuery.of(context).size.width*0.95,
-                            scrollDirection: Axis.horizontal,
-                            itemBuilder: (context, index) {
-                              return imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index+1);
-                              /*return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => FullScreenImage(image: imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index), index: index,)));
-                                },
-                                child: imageDisplayTile(snapshot.data![index] ?? const Icon(Icons.image_not_supported_outlined), index),
-                              );*/
-                            },
-                            layout: SwiperLayout.STACK,
-                            pagination: const SwiperPagination(margin: EdgeInsets.all(10.0)),
-                            loop: false,
-                            onTap: (index) {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) {currentIndexNotifier.value = index; return fullScreenSwiper;}));
-                            },
-                            controller: swiperController,
-                            duration: 0,
-                          );
-                        } else {
-                          return const Center(child: Text("No images available"));
-                        }
-                      } else if (snapshot.hasError) {
-                        return const Center(child: Text("Error loading images"));
-                      } else {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                    },
-                  ),
                 ),
-
                 Container(
                   padding: const EdgeInsets.all(32),
                   child: Row(
@@ -1004,7 +592,7 @@ class _Classification extends State<Classification>{
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            "Prediction probability: ${(classificationResults[0].topFivePredictions[0].probability).toStringAsPrecision(3)}",
+                            "Prediction probability: ${(classificationResult.topFivePredictions[0].probability).toStringAsPrecision(3)}",
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16.0,
@@ -1036,10 +624,10 @@ class _Classification extends State<Classification>{
                           const SizedBox(height: 12),
                           FutureBuilder<RichText>(
                             future: createNameDetailsText(
-                                classificationResults[0].prediction,
+                                classificationResult.prediction,
                                 engNames,
                                 mriNames,
-                                classificationResults[0].topFivePredictions[0].probability
+                                classificationResult.topFivePredictions[0].probability
                             ),
                             builder: (context, snapshot){
                               if (snapshot.hasData) {
@@ -1172,14 +760,14 @@ class _Classification extends State<Classification>{
                           ),
                           /*const SizedBox(height: 12),
                           Text(
-                            classificationResult[0].imagePath,
+                            classificationResult.imagePath,
                             style: TextStyle(
                               color: Colors.grey[500],
                             ),
                           ),*/
                           const SizedBox(height: 12),
                           Text(
-                            "This image was taken on ${DateFormat('yyyy-MM-dd - kk:mm').format(classificationResults[0].timestamp)}",
+                            "This image was taken on ${DateFormat('yyyy-MM-dd - kk:mm').format(classificationResult.timestamp)}",
                             style: TextStyle(
                               color: Colors.grey[500],
                             ),

@@ -7,8 +7,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:wit_app/classes/classification_result.dart';
-import 'package:wit_app/classes/name_data.dart';
-import 'package:wit_app/classes/prediction.dart';
 import 'package:wit_app/globals.dart';
 
 import 'package:wit_app/screens/classification.dart';
@@ -33,34 +31,19 @@ class _ClassificationHistory extends State<ClassificationHistory> {
   Future<void> deleteEntry(int index) async {
     // given a specific result ID, delete the image referenced by it and delete
     // the entry from the Hive box
-    //ClassificationResult? item = box.getAt(index);
-    var item = box.get(index);
-    List<ClassificationResult> items;
-    if (item is ClassificationResult) {
-      items = [item];
-    } else if ((item is List<dynamic> && item[0] is ClassificationResult)) {
-      items = item.map((classification) {return classification as ClassificationResult;}).toList();
-    } else {
-      items = item;
-    }
-    //ClassificationResult? item = box.get(index);
-    //String imagePath = item!.imagePath;
-    List<String> imagePaths = items.map((classification) {
-      return classification.imagePath;
-    }).toList();
-
-
-    // delete images
+    //debugPrint(index.toString());
+    //debugPrint((box.values.length).toString());
+    ClassificationResult? item = box.getAt(index);
+    String imagePath = item!.imagePath;
+    //debugPrint(imagePath);
+    // delete image
     // must check if source image is stored locally or a reference to an on-device image
-    for (int i = 0; i < imagePaths.length; i++){
-      if (imagePaths[i].startsWith('$dir.Path${Platform.pathSeparator}files${Platform.pathSeparator}') == true) {
-        File? sourceImage = File(imagePaths[i]);
-        await sourceImage.delete(); // to complete (?)
-      }
+    if (imagePath.startsWith('$dir.Path${Platform.pathSeparator}files${Platform.pathSeparator}') == true) {
+      File? sourceImage = File(imagePath);
+      await sourceImage.delete(); // to complete (?)
     }
-
     // delete Hive entry
-    box.delete(index);
+    box.deleteAt(index);
     setState(() {
       // refresh the page
     });
@@ -156,26 +139,13 @@ class _ClassificationHistory extends State<ClassificationHistory> {
     // note that this may possibly be a slightly questionable method currently
     int index = 0;
     int numItems = box.values.length;
-    //return box.values.toList().reversed.map((result){
-    return box.keys.toList().reversed.map((key){
-      var result = box.get(key);
-      ClassificationResult displayResult = ClassificationResult('none', '', DateTime.now(), <Prediction>[const Prediction(0, 'none', 0.0, NameData(0, 'none', ['none'], ['none']))]);
-      if (result is List<ClassificationResult> || (result is List<dynamic> && result[0] is ClassificationResult)){
-        displayResult = result[0] as ClassificationResult;
-      } else if (result is ClassificationResult) {
-        displayResult = result;
-      } else {
-        debugPrint("WRONG ENTRY TYPE!");
-        debugPrint("entry type: ${result.runtimeType}");
-        debugPrint("entry element type: ${result[0].runtimeType}");
-      }  // Problem: DisplayResult sometimes gets a different entry than what is pointed to by boxIndex!
-      //int boxIndex = numItems - 1 - index;
-      int boxIndex = key;
+    return box.values.toList().reversed.map((result){
+      int boxIndex = numItems - 1 - index;
       var container = Container(
         child: ListTile(
           leading: ClipOval(
             child: FutureBuilder<Image?>(
-              future: _getImage(displayResult.imagePath),
+              future: _getImage(result.imagePath),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   return snapshot.data ?? const Icon(Icons.image_not_supported_outlined);
@@ -185,8 +155,8 @@ class _ClassificationHistory extends State<ClassificationHistory> {
               },
             ),
           ),
-          title: getTitleName(displayResult),
-          subtitle: Text(DateFormat('yyyy-MM-dd - kk:mm').format(displayResult.timestamp)),
+          title: getTitleName(result),
+          subtitle: Text(DateFormat('yyyy-MM-dd - kk:mm').format(result.timestamp)),
           onTap: () {
             Navigator.push(
                 context,

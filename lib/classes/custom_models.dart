@@ -1,14 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-//import 'package:pytorch_mobile/enums/dtype.dart';
+import 'package:pytorch_mobile/enums/dtype.dart';
 
 import 'package:wit_app/classes/prediction.dart';
 
 const TORCHVISION_NORM_MEAN_RGB = [0.485, 0.456, 0.406];
 const TORCHVISION_NORM_STD_RGB = [0.229, 0.224, 0.225];
 
-/*class BaseModel {
+class BaseModel {
   static const MethodChannel _channel = const MethodChannel('pytorch_mobile');
 
   final int _index;
@@ -118,4 +118,4 @@ class PostProcessingModel extends BaseModel {
     return predictions.sublist(0, 5);
   }
 
-}*/
+}
